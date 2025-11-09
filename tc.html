@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>คำตอบแบบฝึกหัด - ทฤษฎีการคำนวณ บทที่ 5</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Sarabun', Arial, sans-serif; line-height: 1.8; color: #333; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+        header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center; }
+        header h1 { font-size: clamp(1.5rem, 5vw, 2.5rem); margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .course-code { font-size: 1.2rem; opacity: 0.95; }
+        .content { padding: 30px; }
+        .toc { background: #f8f9fa; border-radius: 15px; padding: 25px; margin-bottom: 40px; border-left: 5px solid #667eea; }
+        .toc h2 { color: #667eea; margin-bottom: 15px; font-size: 1.5rem; }
+        .toc ul { list-style: none; padding-left: 0; }
+        .toc li { padding: 8px 15px; margin: 5px 0; background: white; border-radius: 8px; transition: all 0.3s ease; cursor: pointer; }
+        .toc li:hover { background: #667eea; color: white; transform: translateX(10px); }
+        .toc a { text-decoration: none; color: inherit; display: block; }
+        .chapter { margin-bottom: 50px; }
+        h2 { color: #764ba2; font-size: clamp(1.5rem, 4vw, 2rem); margin: 30px 0 20px; padding-bottom: 10px; border-bottom: 3px solid #667eea; }
+        h3 { color: #667eea; font-size: clamp(1.2rem, 3vw, 1.5rem); margin: 25px 0 15px; padding-left: 15px; border-left: 4px solid #764ba2; }
+        h4 { color: #555; font-size: 1.2rem; margin: 20px 0 10px; font-weight: 600; }
+        .page-ref { display: inline-block; background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 15px; font-size: 0.85rem; font-weight: 600; margin-left: 5px; }
+        code { background: #f5f5f5; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.95em; color: #d73a49; }
+        pre { background: #282c34; color: #abb2bf; padding: 20px; border-radius: 10px; overflow-x: auto; margin: 15px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        pre code { background: none; color: inherit; padding: 0; font-size: 0.9rem; }
+        ul, ol { margin: 15px 0; padding-left: 30px; }
+        li { margin: 8px 0; }
+        .highlight-box { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 10px; margin: 20px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .example-box { background: #f8f9fa; border-left: 4px solid #2196f3; padding: 15px 20px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+        .example-box h4 { color: #2196f3; margin-top: 0; }
+        .answer-box { background: #e8f5e9; border-left: 4px solid #4caf50; padding: 15px 20px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+        .answer-box h4 { color: #2e7d32; margin-top: 0; }
+        .proof-box { background: #fff3e0; border-left: 4px solid #ff9800; padding: 15px 20px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+        .proof-box h4 { color: #e65100; margin-top: 0; }
+        .summary-box { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; padding: 25px; border-radius: 15px; margin: 30px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .summary-box h2 { color: white; border-bottom: 2px solid rgba(255,255,255,0.5); }
+        .exercise-number { display: inline-block; background: #667eea; color: white; padding: 5px 15px; border-radius: 20px; font-weight: 600; margin-right: 10px; }
+        hr { border: none; height: 2px; background: linear-gradient(to right, transparent, #667eea, transparent); margin: 40px 0; }
+        .note-box { background: #e1f5fe; border-left: 4px solid #0288d1; padding: 15px 20px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+        .note-box h4 { color: #01579b; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-radius: 10px; overflow: hidden; }
+        th { background: #667eea; color: white; padding: 12px; text-align: left; font-weight: 600; }
+        td { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+        tr:nth-child(even) { background: #f8f9fa; }
+        tr:hover { background: #e3f2fd; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 คำตอบแบบฝึกหัด</h1>
+            <p class="course-code">ทฤษฎีการคำนวณ - บทที่ 5</p>
+            <p class="course-code">ปัญหาที่ตัดสินไม่ได้และลำดับชั้นของชอมสกี</p>
+        </header>
+
+        <div class="content">
+            <div class="summary-box">
+                <h2>📖 เกี่ยวกับเอกสารนี้</h2>
+                <p><strong>เนื้อหา:</strong> คำตอบแบบฝึกหัดครบทั้ง 10 ข้อพร้อมคำอธิบายละเอียด</p>
+                <p><strong>หัวข้อหลัก:</strong> Turing Machine Encoding, Recursive Sets, RE Sets, Rice's Theorem, Post's Correspondence Problem</p>
+                <p style="margin-top: 15px;"><strong>💡 คำแนะนำ:</strong> ใช้สารบัญด้านล่างเพื่อเลือกข้อที่ต้องการดู</p>
+            </div>
+
+            <div class="toc">
+                <h2>📋 สารบัญแบบฝึกหัด</h2>
+                <ul>
+                    <li><a href="#ex1">✓ ข้อ 1: การเข้ารหัสเครื่องทัวริง (Encoding &amp; UTM)</a></li>
+                    <li><a href="#ex2">✓ ข้อ 2: เซตรีเคอร์ซีฟและเซตอาร์.อี. (Recursive &amp; RE Sets)</a></li>
+                    <li><a href="#ex3">✓ ข้อ 3: สมบัติของเซต (Set Properties)</a></li>
+                    <li><a href="#ex4">✓ ข้อ 4: การพิสูจน์สมบัติ (Proofs)</a></li>
+                    <li><a href="#ex5">✓ ข้อ 5: ปัญหาที่ตัดสินได้ (Decidable Problems)</a></li>
+                    <li><a href="#ex6">✓ ข้อ 6: ทฤษฎีบทของไรซ์ (Rice's Theorem)</a></li>
+                    <li><a href="#ex7">✓ ข้อ 7: PCP - หาผลเฉลย (Finding Solutions)</a></li>
+                    <li><a href="#ex8">✓ ข้อ 8: PCP - พิสูจน์ไม่มีผลเฉลย (No Solution Proofs)</a></li>
+                    <li><a href="#ex9">✓ ข้อ 9: ปัญหาสำหรับ CFG (CFG Problems)</a></li>
+                    <li><a href="#ex10">✓ ข้อ 10: Even-Solution PCP</a></li>
+                </ul>
+            </div>
+
+            <!-- ข้อ 1 -->
+            <div id="ex1" class="chapter">
+                <h2><span class="exercise-number">ข้อ 1</span> การเข้ารหัสเครื่องทัวริง</h2>
+                
+                <div class="example-box">
+                    <h4>📝 โจทย์</h4>
+                    <p>เครื่องทัวริง M มี: Q = {q₁, q₂, q₃, q₄}, Σ = {0, 1}, Γ = {0, 1, ⊔, Z₀}</p>
+                    <p>ฟังก์ชัน δ:</p>
+                    <pre><code>δ(q₁, Z₀) = (q₁, Z₀, R)    δ(q₃, 0) = (q₃, 0, R)
+δ(q₁, 1) = (q₁, 1, R)      δ(q₃, ⊔) = (q₄, ⊔, L)
+δ(q₁, 0) = (q₃, 0, R)      δ(q₄, 0) = (q₄, 0, L)
+                            δ(q₄, 1) = (q₂, 0, R)</code></pre>
+                </div>
+
+                <h3>1.1 จงเขียนรหัส &lt;M, 1100&gt;</h3>
+                <div class="answer-box">
+                    <h4>✅ คำตอบ</h4>
+                    <p><strong>การเข้ารหัส:</strong></p>
+                    <ul>
+                        <li>X₁ = 0, X₂ = 1, X₃ = ⊔, X₄ = Z₀</li>
+                        <li>D₁ = R, D₂ = L, D₃ = S</li>
+                    </ul>
+                    <p><strong>รหัสแต่ละ transition: </strong>δ(qᵢ, Xⱼ) = (qₙ, Xₘ, Dₖ) → 0ⁱ10ʲ10ⁿ10ᵐ10ᵏ</p>
+                    <pre><code>code₁ = 010000101000010     (δ(q₁,Z₀)=(q₁,Z₀,R))
+code₂ = 0100101001010       (δ(q₁,1)=(q₁,1,R))  
+code₃ = 01010100010001010   (δ(q₁,0)=(q₃,0,R))
+code₄ = 0001010001001010    (δ(q₃,0)=(q₃,0,R))
+code₅ = 00010100010000100100 (δ(q₃,⊔)=(q₄,⊔,L))
+code₆ = 000010100001010100  (δ(q₄,0)=(q₄,0,L))
+code₇ = 00001001001001010   (δ(q₄,1)=(q₂,0,R))</code></pre>
+                    <p><strong>รหัสสมบูรณ์:</strong></p>
+                    <pre><code>&lt;M&gt; = 111code₁11code₂11code₃11...11code₇111
+&lt;1100&gt; = 000000
+&lt;M,1100&gt; = &lt;M&gt;000000</code></pre>
+                </div>
+
+                <h3>1.2 อธิบายการทำงานของ UTM</h3>
+                <div class="answer-box">
+                    <h4>✅ การทำงาน UTM</h4>
+                    <p><strong>Universal Turing Machine จำลองการทำงานของ M:</strong></p>
+                    <ol>
+                        <li><strong>Initialization:</strong> แบ่งเทปเป็นช้อน - เก็บรหัส M, สถานะ, เทป M, ตำแหน่งหัวอ่าน</li>
+                        <li><strong>Simulation Loop:</strong> อ่านสถานะและสัญลักษณ์ → หา transition ใน &lt;M&gt; → ปรับปรุงสถานะและเทป</li>
+                        <li><strong>สำหรับ input 1100:</strong></li>
+                    </ol>
+                    <pre><code>Step 1: (q₁, ↑Z₀1100) → (q₁, Z₀↑1100)   
+Step 2: (q₁, Z₀↑1100) → (q₁, Z₀1↑100)   
+Step 3: (q₁, Z₀1↑100) → (q₁, Z₀11↑00)   
+Step 4: (q₁, Z₀11↑00) → (q₃, Z₀110↑0)   
+Step 5: (q₃, Z₀110↑0) → (q₃, Z₀1100↑⊔)  
+Step 6: (q₃, Z₀1100↑⊔) → (q₄, Z₀110↑0⊔) 
+Step 7: (q₄, Z₀110↑0⊔) → (q₄, Z₀11↑00⊔) 
+Step 8: (q₄, Z₀11↑00⊔) → (q₂, Z₀110↑00⊔) ✓ ยอมรับ</code></pre>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- ข้อ 2 -->
+            <div id="ex2" class="chapter">
+                <h2><span class="exercise-number">ข้อ 2</span> เซตรีเคอร์ซีฟและเซตอาร์.อี.</h2>
+                
+                <div class="note-box">
+                    <h4>📌 นิยาม</h4>
+                    <ul>
+                        <li><strong>L<sub>e</sub></strong> = {&lt;M&gt; | L(M) = ∅} - เครื่องที่ภาษาว่าง</li>
+                        <li><strong>L<sub>ne</sub></strong> = {&lt;M&gt; | L(M) ≠ ∅} - เครื่องที่ภาษาไม่ว่าง</li>
+                    </ul>
+                </div>
+
+                <h3>2.1 L<sub>e</sub> recursive ⟺ L<sub>ne</sub> recursive</h3>
+                <div class="proof-box">
+                    <h4>📐 พิสูจน์</h4>
+                    <p><strong>สังเกต:</strong> L<sub>ne</sub> = L̄<sub>e</sub> (complement)</p>
+                    <p><strong>(⇒)</strong> สมมติ L<sub>e</sub> เป็น recursive:</p>
+                    <ul>
+                        <li>→ L<sub>e</sub> และ L̄<sub>e</sub> เป็น RE</li>
+                        <li>→ L<sub>ne</sub> = L̄<sub>e</sub> เป็น RE</li>
+                        <li>→ L̄<sub>ne</sub> = L<sub>e</sub> เป็น RE</li>
+                        <li>→ L<sub>ne</sub> เป็น recursive ∎</li>
+                    </ul>
+                    <p><strong>(⇐)</strong> ทำนองเดียวกัน ∎</p>
+                </div>
+
+                <h3>2.2 L<sub>ne</sub> เป็นเซตอาร์.อี.</h3>
+                <div class="proof-box">
+                    <h4>📐 พิสูจน์</h4>
+                    <p><strong>สร้างเครื่องทัวริง M'</strong> ที่ยอมรับ L<sub>ne</sub>:</p>
+                    <ol>
+                        <li>Input: &lt;M&gt;</li>
+                        <li>Enumerate สายอักขระทั้งหมด: ε, 0, 1, 00, 01, 10, 11, ...</li>
+                        <li>สำหรับแต่ละ w: จำลอง M บน w</li>
+                        <li>ถ้า M ยอมรับ w → M' ยอมรับ &lt;M&gt;</li>
+                        <li>ถ้า L(M) = ∅ → M' ไม่หยุด</li>
+                    </ol>
+                    <p>∴ L(M') = L<sub>ne</sub> และ M' เป็นเครื่องทัวริง → L<sub>ne</sub> เป็น RE ∎</p>
+                </div>
+
+                <h3>2.3 L̄<sub>u</sub> ไม่เป็นเซตอาร์.อี.</h3>
+                <div class="proof-box">
+                    <h4>📐 พิสูจน์ (ขัดแย้ง)</h4>
+                    <p><strong>สมมติ:</strong> L̄<sub>u</sub> เป็น RE</p>
+                    <p><strong>เรารู้ว่า:</strong> L<sub>u</sub> เป็น RE (ทฤษฎีบท 5.2.5)</p>
+                    <p><strong>ถ้าทั้ง L<sub>u</sub> และ L̄<sub>u</sub> เป็น RE:</strong></p>
+                    <ul>
+                        <li>→ L<sub>u</sub> เป็น recursive</li>
+                        <li>→ แต่ทฤษฎีบท 5.2.5 บอกว่า L<sub>u</sub> ไม่เป็น recursive</li>
+                        <li>→ ขัดแย้ง!</li>
+                    </ul>
+                    <p>∴ L̄<sub>u</sub> ไม่เป็น RE ∎</p>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- ข้อ 3 -->
+            <div id="ex3" class="chapter">
+                <h2><span class="exercise-number">ข้อ 3</span> สมบัติของเซต</h2>
+
+                <h3>3.1 L₁ ⊆ L₂ และ L₂ เป็น RE → L₁ เป็น RE?</h3>
+                <div class="answer-box">
+                    <h4>✅ จริง</h4>
+                    <p><strong>พิสูจน์:</strong> สร้างเครื่อง M₁ ที่ enumerate L₁ และยอมรับเฉพาะสมาชิกของ L₁</p>
+                    <p>∴ L₁ เป็น RE ∎</p>
+                </div>
+
+                <h3>3.2 L ไม่เป็น RE → L̄ ไม่เป็น RE?</h3>
+                <div class="answer-box">
+                    <h4>❌ เท็จ</h4>
+                    <p><strong>ตัวอย่างค้าน:</strong> L = L̄<sub>u</sub></p>
+                    <ul>
+                        <li>L̄<sub>u</sub> ไม่เป็น RE (จากข้อ 2.3)</li>
+                        <li>L̄ = ¯(L̄<sub>u</sub>) = L<sub>u</sub> เป็น RE ✓</li>
+                    </ul>
+                </div>
+
+                <h3>3.3 L₁, L₂ เป็น RE → L₁L₂ เป็น RE?</h3>
+                <div class="answer-box">
+                    <h4>✅ จริง</h4>
+                    <p><strong>พิสูจน์:</strong> สร้างเครื่อง M ที่:</p>
+                    <ol>
+                        <li>Input: w</li>
+                        <li>ลองแบ่ง w = xy ทุกวิธี</li>
+                        <li>จำลอง M₁ บน x และ M₂ บน y</li>
+                        <li>ถ้าทั้งคู่ยอมรับ → ยอมรับ w</li>
+                    </ol>
+                    <p>∴ L₁L₂ เป็น RE ∎</p>
+                </div>
+
+                <h3>3.4 L เป็น RE → L* เป็น RE?</h3>
+                <div class="answer-box">
+                    <h4>✅ จริง</h4>
+                    <p><strong>พิสูจน์:</strong> สร้างเครื่อง M* ที่:</p>
+                    <ol>
+                        <li>ถ้า w = ε → ยอมรับ</li>
+                        <li>ลองแบ่ง w = w₁w₂...wₖ</li>
+                        <li>จำลอง M<sub>L</sub> บนแต่ละ wᵢ</li>
+                        <li>ถ้าทุก wᵢ ∈ L → ยอมรับ</li>
+                    </ol>
+                    <p>∴ L* เป็น RE ∎</p>
+                </div>
+
+                <h3>3.5-3.6 L₁, L₂ recursive → L₁L₂ และ L* recursive?</h3>
+                <div class="answer-box">
+                    <h4>✅ จริงทั้งคู่</h4>
+                    <p><strong>เพราะ:</strong> เครื่องจำลองหยุดเสมอ (จำนวนการแบ่งจำกัด + เครื่องหยุดเสมอ)</p>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- ข้อ 4 -->
+            <div id="ex4" class="chapter">
+                <h2><span class="exercise-number">ข้อ 4</span> การพิสูจน์สมบัติ</h2>
+
+                <h3>4.1 L จำกัด → L เป็น recursive</h3>
+                <div class="proof-box">
+                    <h4>📐 พิสูจน์</h4>
+                    <p><strong>กรณีที่ 1:</strong> L = ∅ → สร้างเครื่องที่ปฏิเสธทุก input (recursive) ✓</p>
+                    <p><strong>กรณีที่ 2:</strong> L = {w₁, w₂, ..., wₖ}</p>
+                    <ul>
+                        <li>สร้างเครื่อง M ที่เปรียบเทียบ input กับ w₁, w₂, ..., wₖ</li>
+                        <li>M หยุดเสมอ (เปรียบเทียบจำนวนจำกัด)</li>
+                        <li>∴ L เป็น recursive ∎</li>
+                    </ul>
+                </div>
+
+                <h3>4.2 L₁ เป็น CFL, L₂ เป็นปกติ → L₁ ∩ L₂ เป็น CFL</h3>
+                <div class="proof-box">
+                    <h4>📐 พิสูจน์</h4>
+                    <p><strong>Product Construction:</strong></p>
+                    <ul>
+                        <li>L₁ → PDA M₁</li>
+                        <li>L₂ → DFA M₂</li>
+                        <li>สร้าง PDA M ที่จำลองทั้ง M₁ และ M₂ พร้อมกัน</li>
+                        <li>Q = Q₁ × Q₂, ใช้ stack จาก M₁</li>
+                        <li>∴ L₁ ∩ L₂ เป็น CFL ∎</li>
+                    </ul>
+                </div>
+
+                <h3>4.3-4.4 L เป็น RE/recursive → L<sup>R</sup> เป็น RE/recursive</h3>
+                <div class="proof-box">
+                    <h4>📐 พิสูจน์</h4>
+                    <p><strong>สร้างเครื่อง M<sub>R</sub>:</strong></p>
+                    <ol>
+                        <li>Input: w</li>
+                        <li>กลับสายอักขระ → w<sup>R</sup></li>
+                        <li>จำลอง M<sub>L</sub> บน w<sup>R</sup></li>
+                        <li>ยอมรับ w ⟺ M<sub>L</sub> ยอมรับ w<sup>R</sup></li>
+                    </ol>
+                    <p>∴ L<sup>R</sup> เป็น RE/recursive ตาม L ∎</p>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- ข้อ 5 -->
+            <div id="ex5" class="chapter">
+                <h2><span class="exercise-number">ข้อ 5</span> ปัญหาที่ตัดสินได้</h2>
+
+                <h3>5.1 "L(G) เป็นเซตจำกัดหรือไม่" (CFG)</h3>
+                <div class="answer-box">
+                    <h4>✅ ตัดสินได้</h4>
+                    <p><strong>อัลกอริทึม:</strong></p>
+                    <ol>
+                        <li>สร้างกราฟ dependency ของตัวแปร</li>
+                        <li>ตรวจหา cycle</li>
+                        <li>มี cycle → L(G) ไม่จำกัด</li>
+                        <li>ไม่มี cycle → L(G) จำกัด</li>
+                    </ol>
+                    <p><strong>Complexity:</strong> O(|V| + |P|) ∎</p>
+                </div>
+
+                <h3>5.2 "x ∈ L(G) หรือไม่" (CFG)</h3>
+                <div class="answer-box">
+                    <h4>✅ ตัดสินได้</h4>
+                    <p><strong>อัลกอริทึม:</strong> CYK Algorithm</p>
+                    <ol>
+                        <li>แปลง G เป็น Chomsky Normal Form</li>
+                        <li>ใช้ Dynamic Programming สร้างตาราง V[i,j,A]</li>
+                        <li>V[i,j,A] = true ⟺ A derive substring aᵢ...aⱼ</li>
+                        <li>คำตอบ: V[1,n,S]</li>
+                    </ol>
+                    <p><strong>Complexity:</strong> O(n³|G|) ∎</p>
+                </div>
+
+                <h3>5.3 "PCP มีผลเฉลยหรือไม่ เมื่อ |Σ| = 1"</h3>
+                <div class="answer-box">
+                    <h4>✅ ตัดสินได้</h4>
+                    <p><strong>เหตุผล:</strong> เมื่อ |Σ| = 1 ปัญหากลายเป็นสมการเชิงเส้น!</p>
+                    <p>หา n₁, n₂, ..., nₖ ที่: Σnᵢ|wᵢ| = Σnᵢ|xᵢ|</p>
+                    <p>ใช้ Extended Euclidean Algorithm → O(k log(max|wᵢ|)) ∎</p>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- ข้อ 6 -->
+            <div id="ex6" class="chapter">
+                <h2><span class="exercise-number">ข้อ 6</span> ทฤษฎีบทของไรซ์</h2>
+
+                <div class="highlight-box">
+                    <h4>🎯 Rice's Theorem</h4>
+                    <p>ทุก non-trivial property ของภาษาที่เครื่องทัวริงยอมรับเป็นปัญหาที่ตัดสินไม่ได้</p>
+                    <p><strong>Non-trivial:</strong> P ≠ ∅ และ P ≠ {ทุกภาษา RE}</p>
+                </div>
+
+                <h3>6.1-6.5 ใช้ Rice's Theorem พิสูจน์</h3>
+                <div class="proof-box">
+                    <h4>📐 พิสูจน์แบบเดียวกันทั้งหมด</h4>
+                    <ol>
+                        <li><strong>กำหนด property P</strong></li>
+                        <li><strong>แสดงว่า P เป็น non-trivial:</strong>
+                            <ul>
+                                <li>P ≠ ∅ (มีภาษาที่มี property)</li>
+                                <li>P ≠ {ทุก RE} (มีภาษาที่ไม่มี property)</li>
+                            </ul>
+                        </li>
+                        <li><strong>P เป็น semantic property</strong> (ขึ้นกับ L(M) ไม่ใช่ M)</li>
+                        <li><strong>จาก Rice's Theorem → undecidable ∎</strong></li>
+                    </ol>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ข้อ</th>
+                            <th>Property P</th>
+                            <th>ตัวอย่างใน P</th>
+                            <th>ตัวอย่างไม่ใน P</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>6.1</td>
+                            <td>L เป็นปกติ</td>
+                            <td>a*</td>
+                            <td>aⁿbⁿ</td>
+                        </tr>
+                        <tr>
+                            <td>6.2</td>
+                            <td>L เป็น CFL</td>
+                            <td>aⁿbⁿ</td>
+                            <td>aⁿbⁿcⁿ</td>
+                        </tr>
+                        <tr>
+                            <td>6.3</td>
+                            <td>L = Σ*</td>
+                            <td>Σ*</td>
+                            <td>∅</td>
+                        </tr>
+                        <tr>
+                            <td>6.4</td>
+                            <td>L เป็น CFL ไม่ปกติ</td>
+                            <td>aⁿbⁿ</td>
+                            <td>a*, aⁿbⁿcⁿ</td>
+                        </tr>
+                        <tr>
+                            <td>6.5</td>
+                            <td>L recursive ไม่ CFL</td>
+                            <td>aⁿbⁿcⁿ</td>
+                            <td>aⁿbⁿ</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <hr>
+
+            <!-- ข้อ 7 -->
+            <div id="ex7" class="chapter">
+                <h2><span class="exercise-number">ข้อ 7</span> PCP - หาผลเฉลย</h2>
+
+                <h3>7.1 A: [1, 101, 01, 10] | B: [1011, 10, 1010, 1]</h3>
+                <div class="answer-box">
+                    <h4>✅ ผลเฉลย: (2, 4, 2, 1)</h4>
+                    <pre><code>A: 101 + 10 + 101 + 1 = 101101011
+B: 10 + 1 + 10 + 1011 = 101101011 ✓</code></pre>
+                </div>
+
+                <h3>7.2 A: [010, 110, 010, 10, 01] | B: [00, 1101, 1, 00, 1001]</h3>
+                <div class="answer-box">
+                    <h4>✅ ต้องใช้การค้นหาอย่างละเอียด</h4>
+                    <p><strong>วิธีทำ:</strong> ลองผิดลองถูกหรือใช้ algorithm</p>
+                    <p><strong>ตัวอย่างลำดับที่น่าจะใช้ได้:</strong> ต้องตรวจสอบทีละกรณี</p>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- ข้อ 8 -->
+            <div id="ex8" class="chapter">
+                <h2><span class="exercise-number">ข้อ 8</span> PCP - พิสูจน์ไม่มีผลเฉลย</h2>
+
+                <h3>8.1 A: [10, 11, 110, 010] | B: [101, 101, 011, 01]</h3>
+                <div class="proof-box">
+                    <h4>📐 พิสูจน์</h4>
+                    <p><strong>วิเคราะห์ตัวอักษรแรก:</strong></p>
+                    <ul>
+                        <li>ถ้าเริ่มด้วย index 1 หรือ 2: A ขึ้นต้น "1" (2 ตัว), B ขึ้นต้น "1" (3 ตัว) → B ยาวกว่า</li>
+                        <li>ถ้าเพิ่ม index ที่ขึ้นต้น "1": B จะยาวกว่า A เสมอ</li>
+                        <li>ถ้าใช้ index 4: ตัวแรก A="0" แต่ B ต้องเป็น "1" → ขัดแย้ง!</li>
+                        <li>ถ้าเริ่มด้วย index 3: 110 ≠ 011 (ตัวแรกต่าง)</li>
+                        <li>ถ้าเริ่มด้วย index 4: pattern ไม่ตรงกัน</li>
+                    </ul>
+                    <p>∴ ไม่มีผลเฉลย ∎</p>
+                </div>
+
+                <h3>8.2 A: [010, 110, 101, 010] | B: [00, 1101, 010, 101]</h3>
+                <div class="proof-box">
+                    <h4>📐 พิสูจน์ (Counting Argument)</h4>
+                    <p><strong>นับ "0" และ "1":</strong></p>
+                    <p>ให้ nᵢ = จำนวนครั้งที่ใช้ index i</p>
+                    <p><strong>สมการ "0":</strong> 2n₁ + n₂ + n₃ + 2n₄ = 2n₁ + n₂ + 2n₃ + n₄ → n₃ = n₄</p>
+                    <p><strong>สมการ "1":</strong> n₁ + 2n₂ + 2n₃ + n₄ = 0n₁ + 3n₂ + n₃ + 2n₄ → n₁ = n₂</p>
+                    <p><strong>แม้หาค่า n ได้ แต่ไม่สามารถเรียงให้สายอักขระตรงกันได้</strong></p>
+                    <p>∴ ไม่มีผลเฉลย ∎</p>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- ข้อ 9 -->
+            <div id="ex9" class="chapter">
+                <h2><span class="exercise-number">ข้อ 9</span> ปัญหาสำหรับ CFG</h2>
+
+                <div class="note-box">
+                    <h4>📌 Linear Grammar</h4>
+                    <p>A → α โดย α มีตัวแปรได้มากสุด 1 ตัว</p>
+                </div>
+
+                <h3>9.1-9.3, 9.5-9.6, 9.8-9.9: Undecidable</h3>
+                <div class="proof-box">
+                    <h4>📐 วิธีพิสูจน์</h4>
+                    <p><strong>ใช้ Reduction จาก:</strong></p>
+                    <ul>
+                        <li>L(M) = ∅ (undecidable)</li>
+                        <li>PCP (undecidable)</li>
+                        <li>Intersection emptiness (undecidable)</li>
+                    </ul>
+                    <p><strong>ทุกข้อใช้หลักการเดียวกัน:</strong> รีดิวซ์ปัญหาที่รู้ว่า undecidable มาเป็นปัญหาที่ถาม</p>
+                </div>
+
+                <h3>9.4 "L(G) เป็น CFL หรือไม่"</h3>
+                <div class="answer-box">
+                    <h4>✅ Decidable (Trivially)</h4>
+                    <p><strong>เหตุผล:</strong> ถ้า G เป็น CFG แล้ว L(G) เป็น CFL เสมอ (จากนิยาม!)</p>
+                    <p>คำตอบ: "ใช่" เสมอ ∎</p>
+                </div>
+
+                <h3>9.7 "G เป็น linear หรือไม่"</h3>
+                <div class="answer-box">
+                    <h4>✅ Decidable</h4>
+                    <p><strong>อัลกอริทึม:</strong></p>
+                    <ol>
+                        <li>สำหรับแต่ละ production A → α</li>
+                        <li>นับจำนวนตัวแปรใน α</li>
+                        <li>ถ้า > 1 → ไม่เป็น linear</li>
+                        <li>ถ้าทุก production ≤ 1 → เป็น linear</li>
+                    </ol>
+                    <p><strong>Complexity:</strong> O(|P| × max|α|) ∎</p>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- ข้อ 10 -->
+            <div id="ex10" class="chapter">
+                <h2><span class="exercise-number">ข้อ 10</span> Even-Solution PCP</h2>
+
+                <div class="note-box">
+                    <h4>📌 นิยาม</h4>
+                    <p><strong>Even-solution:</strong> ผลเฉลย i₁, i₂, ..., iₘ โดยทุก iⱼ เป็นจำนวนคู่</p>
+                </div>
+
+                <div class="proof-box">
+                    <h4>📐 พิสูจน์ว่า Even-Solution PCP เป็น Undecidable</h4>
+                    
+                    <p><strong>Reduction จาก PCP ปกติ:</strong></p>
+                    <ol>
+                        <li><strong>ให้:</strong> (A, B) = ([w₁, ..., wₖ], [x₁, ..., xₖ])</li>
+                        <li><strong>สร้าง:</strong> (A', B') โดยเพิ่มสมาชิกเป็นสองเท่า
+                            <ul>
+                                <li>A' = [w₁, w₁, w₂, w₂, ..., wₖ, wₖ]</li>
+                                <li>B' = [x₁, x₁, x₂, x₂, ..., xₖ, xₖ]</li>
+                                <li>index 2i-1, 2i → wᵢ, xᵢ</li>
+                            </ul>
+                        </li>
+                        <li><strong>การวิเคราะห์:</strong>
+                            <ul>
+                                <li>(⇒) ถ้า (A,B) มีผลเฉลย j₁,...,jₘ → (A',B') มีผลเฉลย-คู่ 2j₁,...,2jₘ</li>
+                                <li>(⇐) ถ้า (A',B') มีผลเฉลย-คู่ i₁,...,iₘ → (A,B) มีผลเฉลย i₁/2,...,iₘ/2</li>
+                            </ul>
+                        </li>
+                        <li><strong>สรุป:</strong> (A,B) มีผลเฉลย ⟺ (A',B') มีผลเฉลย-คู่</li>
+                    </ol>
+                    
+                    <p><strong>∴ Even-Solution PCP เป็น undecidable ∎</strong></p>
+                </div>
+
+                <div class="example-box">
+                    <h4>💡 ตัวอย่าง</h4>
+                    <p><strong>PCP:</strong> A = [1, 10111, 10], B = [111, 10, 0]</p>
+                    <p><strong>Even-PCP:</strong></p>
+                    <pre><code>A' = [1, 1, 10111, 10111, 10, 10]
+B' = [111, 111, 10, 10, 0, 0]
+
+ถ้า (A,B) มีผลเฉลย (2, 1, 1, 3)
+→ (A',B') มีผลเฉลย-คู่ (4, 2, 2, 6)</code></pre>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="summary-box">
+                <h2>🎯 สรุปสำคัญ</h2>
+                <h3>แนวคิดหลัก</h3>
+                <ul>
+                    <li><strong>Encoding:</strong> UTM ใช้รหัสเพื่อจำลองเครื่องทัวริงอื่น</li>
+                    <li><strong>Recursive vs RE:</strong> Recursive หยุดเสมอ, RE อาจไม่หยุด</li>
+                    <li><strong>Rice's Theorem:</strong> เกือบทุก property ของภาษาเป็น undecidable</li>
+                    <li><strong>PCP:</strong> ปัญหาพื้นฐานที่ undecidable ใช้สำหรับ reduction</li>
+                    <li><strong>Reduction:</strong> เทคนิคหลักในการพิสูจน์ undecidability</li>
+                </ul>
+
+                <h3>เทคนิคการพิสูจน์</h3>
+                <ol>
+                    <li><strong>Direct Construction:</strong> สร้างเครื่องที่ทำงานตามต้องการ</li>
+                    <li><strong>Contradiction:</strong> สมมติตรงข้ามแล้วหาข้อขัดแย้ง</li>
+                    <li><strong>Reduction:</strong> แปลงปัญหาหนึ่งเป็นอีกปัญหา</li>
+                    <li><strong>Rice's Theorem:</strong> ใช้ทฤษฎีบทโดยตรง</li>
+                    <li><strong>Counting Argument:</strong> นับจำนวนสัญลักษณ์</li>
+                </ol>
+
+                <div class="note-box" style="margin-top: 20px;">
+                    <h4>📚 ข้อแนะนำการศึกษา</h4>
+                    <ul>
+                        <li>เข้าใจ <strong>Universal Turing Machine</strong> เป็นรากฐาน</li>
+                        <li>จำแนก <strong>ปัญหาที่ตัดสินได้</strong> vs <strong>ตัดสินไม่ได้</strong></li>
+                        <li>ฝึก<strong>หาผลเฉลย PCP</strong> และ<strong>พิสูจน์ไม่มีผลเฉลย</strong></li>
+                        <li>เข้าใจ <strong>Reduction technique</strong> อย่างลึกซึ้ง</li>
+                        <li>ใช้ <strong>Rice's Theorem</strong> เมื่อเกี่ยวกับ language properties</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Smooth scrolling
+        document.querySelectorAll('.toc a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            });
+        });
+    </script>
+</body>
+</html>
