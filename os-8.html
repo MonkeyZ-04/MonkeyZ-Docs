@@ -56,7 +56,7 @@
                     <li><strong>Base Register:</strong> เก็บแอดเดรสฟิสิคัลที่เล็กที่สุดที่ถูกต้อง</li>
                     <li><strong>Limit Register:</strong> ระบุขนาดของช่วงแอดเดรสที่ process สามารถเข้าถึงได้</li>
                 </ul>
-                <p>ตัวอย่าง: ถ้า base = 300040 และ limit = 120900 แล้ว process สามารถเข้าถึงแอดเดรส 300040-420939 ได้เท่านั้น <span class="page-ref">หน้า 351</span></p>
+                <p>ตัวอย่าง: ถ้า base = 300040 และ limit = 420939 แล้ว process สามารถเข้าถึงแอดเดรส 300040-420939 ได้เท่านั้น <span class="page-ref">หน้า 351</span></p>
                 <p>กลไกการป้องกัน: CPU ฮาร์ดแวร์เปรียบเทียบทุกแอดเดรสที่สร้างใน user mode กับ registers เหล่านี้ การพยายามเข้าถึงนอกขอบเขตจะทำให้เกิด trap ไปยัง operating system <span class="page-ref">หน้า 351, Figure 9.2 หน้า 352</span></p>
 
                 <h3>1.3 Address Binding</h3>
