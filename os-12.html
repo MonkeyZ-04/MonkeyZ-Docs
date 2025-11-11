@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File-System Interface - บทสรุปโดยละเอียด</title>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 File-System Interface - บทสรุปโดยละเอียด</h1>
+            <div class="course-code">บทสรุปเชิงลึกจากเนื้อหาที่ให้มา</div>
+            <link rel="stylesheet" href="style.css">
+        </header>
+
+        <div class="content">
+            <div class="toc">
+                <h2>📋 สารบัญ (โครงสร้างบท)</h2>
+                <ul>
+                    <li>🔹 ภาพรวม</li>
+                    <li>🔹 1. File Attributes และ Operations</li>
+                    <li>🔹 2. File Locking</li>
+                    <li>🔹 3. File Types และ Structures</li>
+                    <li>🔹 4. File Access Methods</li>
+                    <li>🔹 5. Directory และ Disk Structure</li>
+                    <li>🔹 6. Directory Structures</li>
+                    <li>🔹 7. File-System Mounting</li>
+                    <li>🔹 8. File Sharing</li>
+                    <li>🔹 9. Protection</li>
+                    <li>🔹 สรุปสาระสำคัญ</li>
+                </ul>
+            </div>
+
+            <div class="chapter">
+                <h2>ภาพรวม</h2>
+                <p>บทนี้กล่าวถึง File-System Interface ซึ่งเป็นส่วนติดต่อระหว่างผู้ใช้/โปรแกรมกับระบบจัดเก็บข้อมูล โดย File คือ uniform logical view ของข้อมูลที่ถูกจัดเก็บ ซึ่ง mapped ไปยัง physical devices ที่อาจไม่ uniform</p>
+
+                <h2>1. File Attributes และ Operations</h2>
+                
+                <h3>File Attributes <span class="page-ref">(หน้า 1)</span></h3>
+                <p>File มีคุณสมบัติ (attributes) ที่สำคัญดังนี้:</p>
+                <ul>
+                    <li>Name - ชื่อไฟล์</li>
+                    <li>Identifier (id) - รหัสประจำตัวไฟล์</li>
+                    <li>Type - ประเภทของไฟล์</li>
+                    <li>Location - ตำแหน่งที่เก็บข้อมูล</li>
+                    <li>Size - ขนาดของไฟล์</li>
+                    <li>Protection - การป้องกันและควบคุมการเข้าถึง</li>
+                    <li>Timestamps - เวลาที่สร้าง, แก้ไขครั้งล่าสุด, ใช้งานครั้งล่าสุด</li>
+                    <li>User identification (owner) - ผู้เป็นเจ้าของไฟล์</li>
+                </ul>
+
+                <h3>File Operations <span class="page-ref">(หน้า 2)</span></h3>
+                <p>การดำเนินการกับไฟล์ที่สำคัญประกอบด้วย:</p>
+                <ul>
+                    <li>Creating a file - สร้างไฟล์ใหม่</li>
+                    <li>Writing a file - เขียนข้อมูลลงไฟล์</li>
+                    <li>Reading a file - อ่านข้อมูลจากไฟล์</li>
+                    <li>Repositioning within a file (seek) - เปลี่ยนตำแหน่งการอ่าน/เขียน โดยไม่เกี่ยวข้องกับ I/O จริง</li>
+                    <li>Delete a file - ลบไฟล์</li>
+                    <li>Truncating a file - ลบเนื้อหาในไฟล์แต่เก็บ attributes ไว้</li>
+                    <li>Appending, renaming, and copying - เพิ่มข้อมูลต่อท้าย, เปลี่ยนชื่อ, และคัดลอก</li>
+                </ul>
+
+                <h3>Open-File Table Structure <span class="page-ref">(หน้า 2-3)</span></h3>
+                <p>ระบบปฏิบัติการใช้ตารางเพื่อจัดการไฟล์ที่เปิดอยู่:</p>
+                <ul>
+                    <li>Per-process table - ติดตามไฟล์ทั้งหมดที่ process เปิดอยู่ (มี 1 table ต่อ 1 process)
+                        <ul>
+                            <li>มีข้อมูล: File pointer, Access rights</li>
+                        </ul>
+                    </li>
+                    <li>System-wide table - เก็บข้อมูลที่ไม่ขึ้นกับ process (มี 1 table ต่อ 1 OS)
+                        <ul>
+                            <li>มีข้อมูล: File-open count, Disk location of the file</li>
+                        </ul>
+                    </li>
+                </ul>
+                <p>การทำงานของ open() และ close():</p>
+                <ul>
+                    <li>open() - คืนค่า pointer ไปยังไฟล์ใน open-file (per-process) table</li>
+                    <li>close() - ลบ entry ใน per-process table และลดค่า file-open count ใน system-wide table</li>
+                </ul>
+
+                <h3>Information Associated with an Open File <span class="page-ref">(หน้า 3)</span></h3>
+                <ul>
+                    <li>File pointer - ตำแหน่งปัจจุบันในการอ่าน/เขียน</li>
+                    <li>File-open count - จำนวนครั้งที่ไฟล์ถูกเปิด</li>
+                    <li>Disk location of the file - ตำแหน่งบนดิสก์</li>
+                    <li>Access rights - สิทธิ์ในการเข้าถึง</li>
+                </ul>
+
+                <h2>2. File Locking</h2>
+
+                <h3>ประเภทของ Lock <span class="page-ref">(หน้า 4)</span></h3>
+                <ul>
+                    <li>Shared lock (r) - หลาย processes สามารถได้ lock พร้อมกัน
+                        <ul>
+                            <li>ใช้สำหรับ reader</li>
+                            <li>ถ้ายัง shared lock อยู่ ห้าม exclusive lock</li>
+                        </ul>
+                    </li>
+                    <li>Exclusive lock (w) - เพียง process เดียวสามารถได้ lock ในแต่ละครั้ง
+                        <ul>
+                            <li>ใช้สำหรับ writer</li>
+                            <li>ถ้ายัง exclusive lock อยู่ ห้าม shared/exclusive lock</li>
+                        </ul>
+                    </li>
+                </ul>
+                <p>มีทั้งแบบ:</p>
+                <ul>
+                    <li>Synchronous (blocking) - รอจนกว่าจะได้ lock</li>
+                    <li>Asynchronous (non-blocking) - ไม่รอ ถ้าไม่ได้ lock ก็คืนค่าทันที</li>
+                </ul>
+
+                <h3>Mandatory vs. Advisory Locking <span class="page-ref">(หน้า 4)</span></h3>
+                <ul>
+                    <li>Mandatory locking - OS รับประกันความถูกต้องของการล็อค
+                        <ul>
+                            <li>Windows ใช้ mandatory locking</li>
+                        </ul>
+                    </li>
+                    <li>Advisory locking - ขึ้นกับนักพัฒนาซอฟต์แวร์ในการ acquire และ release
+                        <ul>
+                            <li>Linux ใช้ advisory locking</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h2>3. File Types และ Structures</h2>
+
+                <h3>File Types และ Magic Number <span class="page-ref">(หน้า 5)</span></h3>
+                <p>ไฟล์บน Linux ไม่จำเป็นต้องมีนามสกุล (extension) สามารถระบุประเภทไฟล์ได้จาก magic number:</p>
+                <ul>
+                    <li>ใช้คำสั่ง: <code>od -h --endian=big file.ext</code></li>
+                    <li>ตัวอย่าง magic numbers:
+                        <ul>
+                            <li>EXE: 7F 45 4C 46</li>
+                            <li>PNG: 89 50 4E 47 0D 0A 1A 0A</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3>File Structures <span class="page-ref">(หน้า 6)</span></h3>
+                <p>OS ส่วนใหญ่จะมี file structures ให้น้อยที่สุด ตัวอย่างเช่น executable files บน Linux:</p>
+                <ul>
+                    <li>เมื่อสั่ง execute ไฟล์ OS จะต้องตรวจสอบ file structure ก่อนว่าถูกต้องหรือไม่</li>
+                    <li>แต่ละส่วนของไฟล์ exe จะถูกโหลดลง memory ที่ตำแหน่งต่างกัน</li>
+                    <li>อ้างอิง: Executable and Linkable Format (ELF)</li>
+                </ul>
+
+                <h3>Internal File Structure <span class="page-ref">(หน้า 7)</span></h3>
+                <p>Logical records และ Physical blocks:</p>
+                <ul>
+                    <li>Linux: ไฟล์คือ stream of bytes, Logical record size = 1 byte</li>
+                    <li>Physical block size = 512, 1K, 2K, 4K bytes ขึ้นกับฮาร์ดแวร์</li>
+                    <li>Packing technique - วิธีการเก็บ logical records ลงบน physical blocks</li>
+                </ul>
+                <p>ตัวอย่างการจัดเก็บ:</p>
+                <ul>
+                    <li>Variable length: AAA\n, BBBBB\n, CCCC\n, DDDDDD</li>
+                    <li>Fixed length: AAA□□□□□□□, BBBBB□□□□□, CCCC□□□□□□, DDDDDD□□□□</li>
+                </ul>
+
+                <h2>4. File Access Methods</h2>
+
+                <h3>Sequential Access <span class="page-ref">(หน้า 8)</span></h3>
+                <ul>
+                    <li>เข้าถึง record n ต้องเข้าถึง record n-1 ก่อน</li>
+                    <li>ถึงแม้ว่า device อาจเป็น random access</li>
+                </ul>
+
+                <h3>Direct Access <span class="page-ref">(หน้า 8)</span></h3>
+                <ul>
+                    <li>ใช้ fixed-length logical records</li>
+                    <li>เข้าถึงข้อมูลได้โดยตรงโดยไม่ต้องผ่าน record ก่อนหน้า</li>
+                </ul>
+
+                <h3>Other Access Methods - Indexing <span class="page-ref">(หน้า 8-9)</span></h3>
+                <ul>
+                    <li>ISAM (Index Sequential-Access Method, IBM)</li>
+                </ul>
+                <h4>ตัวอย่างการใช้ Indexing <span class="page-ref">(หน้า 9)</span>:</h4>
+                <ul>
+                    <li>1 record = 10 bytes (UPC) + 6 bytes (price) = 16 bytes</li>
+                    <li>1 block = 1,024 bytes → 64 records per block (64 × 16 = 1K)</li>
+                    <li>Total 2,000 blocks → 2,000 × 64 = 128,000 records (in disk)</li>
+                    <li>Data เรียงตาม UPC (Universal Product Code)</li>
+                    <li>Index structure:
+                        <ul>
+                            <li>Total 2,000 records, 20,000 bytes (in memory)</li>
+                            <li>ใช้ Binary search หา block ที่ต้องการ</li>
+                            <li>แล้วทำ Sequential search ใน block นั้น (เพียง 64 records)</li>
+                        </ul>
+                    </li>
+                    <li>หมายเหตุ: ควรออกแบบให้ block เป็นจำนวนเท่าของ physical block</li>
+                </ul>
+
+                <h2>5. Directory และ Disk Structure</h2>
+
+                <h3>ความสัมพันธ์ระหว่าง Disk, Partition, Volume, File System <span class="page-ref">(หน้า 10-13)</span></h3>
+                <ul>
+                    <li>Partition - logical division of disk <span class="page-ref">(หน้า 11)</span>
+                        <ul>
+                            <li>การแบ่งพื้นที่ดิสก์</li>
+                            <li>ในกรณีทั่วไป #disk : #partition = 1 : 1</li>
+                        </ul>
+                    </li>
+                    <li>Volume - logical assembly of one or more partitions <span class="page-ref">(หน้า 11)</span>
+                        <ul>
+                            <li>OS จะใช้ file system ได้ต้อง mount ก่อนเพื่อให้ได้ volume</li>
+                            <li>1 volume ติดตั้งได้แค่ 1 file system เท่านั้น</li>
+                            <li>ในกรณีทั่วไป #volume : #partition = 1 : 1</li>
+                            <li>สามารถเอา partition หลายตัวมารวมกันเป็น volume ได้ เช่น LVM ของ Linux</li>
+                        </ul>
+                    </li>
+                    <li>Directory - file system cataloging structure <span class="page-ref">(หน้า 11)</span>
+                        <ul>
+                            <li>มี references ไปยัง files และ directories อื่น</li>
+                            <li>มี directory ซ้อน directory ได้ (directory ≈ folder)</li>
+                            <li>เกิดขึ้นเมื่อสร้าง file system</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3>ขั้นตอนการสร้าง File System <span class="page-ref">(หน้า 12)</span></h3>
+                <p>ปกติจะทำแค่ 2 steps:</p>
+                <ol>
+                    <li>Create a partition - ใช้คำสั่ง fdisk (แบ่งพื้นที่ดิสก์)</li>
+                    <li>Make a file system - ใช้คำสั่ง mkfs (ติดตั้ง file system ลงบน physical volume)</li>
+                </ol>
+                <ul>
+                    <li>การสร้าง volume จะรวมไปกับขั้นที่ 1 หรือ 2</li>
+                </ul>
+                <h4>Drive Letter (Windows):</h4>
+                <ul>
+                    <li>กำหนด drive letter ให้แต่ละ volume ได้ เช่น A B C D E</li>
+                    <li>ต้องเป็น volume ที่มี file system แล้ว</li>
+                    <li>Windows เริ่มจาก drive C เพราะยุคแรกมี drive A, B สำหรับ floppy disk 5" และ 3.5"</li>
+                </ul>
+
+                <h3>Logical Volume Management (Linux) <span class="page-ref">(หน้า 13)</span></h3>
+                <p>เมื่อสร้าง partition แล้วต้องสร้าง physical volume ด้วยคำสั่ง pvcreate:</p>
+                <ul>
+                    <li>เพราะต้องการแค่ physical volume เปล่าๆ ที่ยังไม่มี file system</li>
+                    <li>ใน Linux เวอร์ชันก่อน file system จะอยู่บน physical volume ไม่ต้องมี logical volume</li>
+                    <li>ปัจจุบันทำได้ 2 แบบ</li>
+                </ul>
+                <p>ประโยชน์ของ LVM:</p>
+                <ul>
+                    <li>สร้าง logical volume ที่ใหญ่กว่า disk ได้ เช่น 100 TB</li>
+                    <li>logical volume ทำ resize ได้ง่ายกว่า</li>
+                </ul>
+
+                <h2>6. Directory Structures</h2>
+
+                <h3>Directory Overview <span class="page-ref">(หน้า 14)</span></h3>
+                <ul>
+                    <li>Directory ทำหน้าที่เป็น Symbol table (file names → directory entry)</li>
+                    <li>Basic operations:
+                        <ul>
+                            <li>Search for a file</li>
+                            <li>Create a file</li>
+                            <li>List a directory</li>
+                            <li>Rename a file</li>
+                            <li>Traverse the file system - เช่น dir /s (Windows) หรือ ls -R (Linux)</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3>Single-Level Directory <span class="page-ref">(หน้า 15)</span></h3>
+                <ul>
+                    <li>โครงสร้างแบบง่ายสุด มีเพียงระดับเดียว</li>
+                    <li>Limitations:
+                        <ul>
+                            <li>เมื่อจำนวนไฟล์เพิ่มขึ้น</li>
+                            <li>เมื่อจำนวนผู้ใช้เพิ่มขึ้น</li>
+                            <li>naming collision (unique-name rule is violated)</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3>Two-Level Directory <span class="page-ref">(หน้า 16)</span></h3>
+                <p>มีสองระดับ:</p>
+                <ul>
+                    <li>The first level (master file directory) แยก users ออกจากกัน</li>
+                    <li>แต่ละ user มี directory ของตัวเอง</li>
+                </ul>
+
+                <h3>Tree-Structured Directory <span class="page-ref">(หน้า 17)</span></h3>
+                <ul>
+                    <li>Users สามารถจัดการ subdirectories ของตัวเองได้</li>
+                    <li>มีโครงสร้างเป็นต้นไม้</li>
+                </ul>
+
+                <h3>Acyclic-Graph Directory <span class="page-ref">(หน้า 18-19)</span></h3>
+                <p>อนุญาตให้ 2 folders/files ชี้ไปที่ folder/file เดียวกัน เพื่อ:</p>
+                <ul>
+                    <li>แชร์ระหว่าง 2 applications (ไม่ต้องมี 2 copies)</li>
+                    <li>ความสะดวก เช่น c:\doc ชี้ไปที่ My Documents</li>
+                </ul>
+                <p>Linux มี 2 แบบ:</p>
+                <ul>
+                    <li>Hard link - ใช้คำสั่ง <code>ln</code></li>
+                    <li>Soft link (symbolic link) - ใช้คำสั่ง <code>ln -s</code>ระบุ path ห้ามย้าย</li>
+                </ul>
+
+                <h3>General Graph Directory <span class="page-ref">(หน้า 20)</span></h3>
+                <ul>
+                    <li>มี loop ได้</li>
+                    <li>อาจเกิดจากไวรัสหรืออุบัติเหตุ เช่นทำ soft link พลาด</li>
+                </ul>
+
+                <h2>7. File-System Mounting</h2>
+
+                <h3>การ Mount File System <span class="page-ref">(หน้า 21-24)</span></h3>
+                <ul>
+                    <li>File system ต้อง mounted ก่อนจึงจะใช้งานได้กับ processes</li>
+                </ul>
+                <h4>ตัวอย่างการใช้ flash drive บน Linux <span class="page-ref">(หน้า 21)</span>:</h4>
+                <ul>
+                    <li>พอเสียบ flash drive แล้ว OS จะ mount ให้อัตโนมัติ</li>
+                    <li>เช่น อยู่ที่ /media/flashdrive_name</li>
+                    <li>Windows ให้อยู่ที่ drive letter ใหม่</li>
+                </ul>
+                <h4>Linux <span class="page-ref">(หน้า 23)</span>:</h4>
+                <ul>
+                    <li>volume 1 ที่ติดตั้ง OS เริ่มต้นที่ /</li>
+                    <li>device ทุกอย่าง เช่น printer, USB port ต้อง mount ก่อน แล้วจะอ่านเขียนได้เหมือนไฟล์ปกติ</li>
+                    <li>ตัวอย่างโครงสร้าง:
+                        <ul>
+                            <li>/ ใช้ space ของ volume 1</li>
+                            <li>/home/tom ใช้ volume 2</li>
+                            <li>/home/bob ใช้ volume 3</li>
+                            <li>/home/joe ใช้ volume 4</li>
+                        </ul>
+                    </li>
+                </ul>
+                <h4>Windows <span class="page-ref">(หน้า 23)</span>:</h4>
+                <ul>
+                    <li>Windows: maintaining an extended two-level directory</li>
+                    <li>ข้อดีของ first level เป็น letter คือ user-friendly</li>
+                    <li>ข้อเสียคือมีแค่ A-Z เท่านั้น (26 drives)</li>
+                    <li>ใช้คำสั่ง mount (Windows 7 ขึ้นไป) ทำให้ไม่ถูกจำกัดจำนวนดิสก์แล้ว mount ที่โฟลเดอร์ก็ได้</li>
+                </ul>
+                <h4>MacOS X: all file systems are mounted under /Volumes <span class="page-ref">(หน้า 23)</span></h4>
+                <ul>
+                    <li>แต่ละ volume ใช้ file system ต่างกันได้ <span class="page-ref">(หน้า 23)</span></li>
+                </ul>
+
+                <h2>8. File Sharing</h2>
+
+                <h3>Remote File Systems <span class="page-ref">(หน้า 24-25)</span></h3>
+                <ul>
+                    <li>Windows: sharing files via network</li>
+                    <li>Linux: mount to a file system on another Linux
+                        <ul>
+                            <li>คำสั่งแบบง่าย: <code>mount //ip-address/share /mnt/data</code></li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3>Network File System <span class="page-ref">(หน้า 25)</span></h3>
+                <p>ใช้ SMB File Server (SAMBA):</p>
+                <ul>
+                    <li>ให้ drive Z: เป็น network file system</li>
+                    <li>ใช้ NAS ก็ได้</li>
+                </ul>
+                <p>ข้อดีของ File Server:</p>
+                <ul>
+                    <li>ใช้พื้นที่เก็บข้อมูลคุ้มค่า เพราะแชร์กัน</li>
+                    <li>ส่วนกลางทำหน้าที่ backup ข้อมูล</li>
+                    <li>ถูกแทนที่ด้วยบริการอย่าง Google Drive หรือ One Drive</li>
+                </ul>
+
+                <h2>9. Protection</h2>
+
+                <h3>File Permissions (Linux) <span class="page-ref">(หน้า 26)</span></h3>
+                <p>รูปแบบ: <code>d rwx rwx rwx</code></p>
+                <ul>
+                    <li>d = Directory</li>
+                    <li>rwx = read, write, execute</li>
+                    <li>แบ่งเป็น 3 กลุ่ม: Owner, Group, Others</li>
+                </ul>
+                <p>คำสั่งที่เกี่ยวข้อง:</p>
+                <ul>
+                    <li>chown - เปลี่ยนเจ้าของ</li>
+                    <li>chgrp - เปลี่ยนกลุ่ม</li>
+                    <li>chmod - เปลี่ยน permissions</li>
+                </ul>
+                <p>ตัวอย่าง modes:</p>
+                <ul>
+                    <li>mode 755 = 111 101 101 (owner: rwx, group: r-x, others: r-x)</li>
+                    <li>mode 644 = 110 100 100 (owner: rw-, group: r--, others: r--)</li>
+                    <li>mode 700 = 111 000 000 (owner: rwx, group: ---, others: ---)</li>
+                    <li>mode 400 = 100 000 000 (owner: r--, group: ---, others: ---)</li>
+                </ul>
+
+                <h2>สรุปสาระสำคัญ</h2>
+                <p>บท File-System Interface นำเสนอแนวคิดพื้นฐานเกี่ยวกับการจัดการไฟล์และ directory ใน OS โดยครอบคลุม:</p>
+                <ul>
+                    <li>File Attributes และ Operations - คุณสมบัติของไฟล์และการดำเนินการพื้นฐาน รวมถึงโครงสร้าง open-file table แบบ 2 ระดับ (per-process และ system-wide)</li>
+                    <li>File Locking - กลไกการล็อคไฟล์แบบ shared และ exclusive พร้อมความแตกต่างระหว่าง mandatory และ advisory locking</li>
+                    <li>File Types และ Structures - การระบุประเภทไฟล์ผ่าน magic number, internal structure ของไฟล์, และ packing technique</li>
+                    <li>File Access Methods - วิธีการเข้าถึงไฟล์ 3 แบบ ได้แก่ sequential, direct, และ indexed access</li>
+                    <li>Directory และ Disk Structure - ความสัมพันธ์ระหว่าง disk, partition, volume, และ file system รวมถึง Logical Volume Management</li>
+                    <li>Directory Structures - วิวัฒนาการของโครงสร้าง directory จาก single-level ไปสู่ tree-structured และ acyclic-graph</li>
+                    <li>File-System Mounting - กระบวนการ mount file system และความแตกต่างระหว่าง Linux, Windows, และ MacOS X</li>
+                    <li>File Sharing - การแชร์ไฟล์ผ่าน network รวมถึง NFS และ file server</li>
+                    <li>Protection - ระบบ permission แบบ Linux (rwx) สำหรับควบคุมการเข้าถึงไฟล์</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

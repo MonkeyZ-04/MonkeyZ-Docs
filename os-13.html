@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สรุป File-System Implementation (Chapter 14-15)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 สรุป File-System Implementation (Chapter 14-15)</h1>
+            <div class="course-code">บทสรุปเชิงลึกจากไฟล์ File-System-Implementation-Summary (1).md</div>
+        </header>
+
+        <div class="content">
+            <div class="toc">
+                <h2>📋 สารบัญ (โครงสร้างบท)</h2>
+                <ul>
+                    <li>🔹 ภาพรวม</li>
+                    <li>🔹 1. File-System Structure (โครงสร้างระบบไฟล์)</li>
+                    <li>🔹 2. File-System Operations (การทำงาน)</li>
+                    <li>🔹 3. Directory Implementation</li>
+                    <li>🔹 4. Allocation Methods (วิธีจัดสรร)</li>
+                    <li>🔹 5. Free-Space Management</li>
+                    <li>🔹 6. Efficiency and Performance</li>
+                    <li>🔹 7. File-System Internals (Chapter 15)</li>
+                    <li>🔹 8. Recovery - Journaling File Systems</li>
+                    <li>🔹 สรุปภาพรวม</li>
+                    <li>🔹 ข้อสังเกตสำคัญ</li>
+                    <li>🔹 แหล่งข้อมูล</li>
+                </ul>
+            </div>
+
+            <div class="chapter">
+                <h2>ภาพรวม</h2>
+                <p>บทนี้กล่าวถึงการนำระบบไฟล์ (File System) ไปใช้งานจริง โดยเน้นที่:</p>
+                <ul>
+                    <li>โครงสร้างข้อมูลภายใน (internal structures)</li>
+                    <li>วิธีการจัดสรร storage space</li>
+                    <li>การจัดการพื้นที่ว่าง (free-space management)</li>
+                    <li>ประสิทธิภาพของระบบ</li>
+                </ul>
+                <p><strong>แหล่งข้อมูล:</strong> Chapter 14 <span class="page-ref">(หน้า 563-585)</span>, Chapter 15 <span class="page-ref">(หน้า 597-601)</span>, และ Slides</p>
+                
+                <hr>
+
+                <h2>1. File-System Structure (โครงสร้างระบบไฟล์)</h2>
+
+                <h3>1.1 คุณสมบัติของ Disk <span class="page-ref">(หน้า 564)</span></h3>
+                <p><strong>Disks มี 2 คุณสมบัติที่เหมาะกับ file systems:</strong></p>
+                <ol>
+                    <li><strong>Rewritable in place</strong> - สามารถอ่าน block, แก้ไข, และเขียนกลับไปยัง block เดิมได้</li>
+                    <li><strong>Direct access</strong> - เข้าถึงข้อมูลแบบ sequential หรือ random ได้โดยการเคลื่อนย้าย read-write heads</li>
+                </ol>
+                <p><strong>NVM (Nonvolatile Memory) Devices:</strong></p>
+                <ul>
+                    <li>ถูกใช้มากขึ้นสำหรับ file storage</li>
+                    <li>แตกต่างจาก HDDs: ไม่สามารถ rewrite in place ได้</li>
+                    <li>มี performance characteristics ที่ต่างกัน</li>
+                    <li>ใช้ blocks ขนาด 4,096 bytes</li>
+                </ul>
+
+                <h3>1.2 Layered File System <span class="page-ref">(หน้า 564-565)</span></h3>
+                <p>File system ประกอบด้วย หลายระดับ:</p>
+                <p><strong>1. I/O Control (ระดับล่างสุด)</strong></p>
+                <ul>
+                    <li>ประกอบด้วย device drivers และ interrupt handlers</li>
+                    <li>แปลง high-level commands เป็น low-level hardware instructions</li>
+                    <li>ถ่ายโอนข้อมูลระหว่าง main memory และ disk</li>
+                </ul>
+                <p><strong>2. Basic File System</strong></p>
+                <ul>
+                    <li>ส่งคำสั่งทั่วไปไปยัง device driver</li>
+                    <li>จัดการกับ logical block addresses</li>
+                    <li>จัดการ I/O request scheduling</li>
+                    <li>จัดการ memory buffers และ caches</li>
+                </ul>
+                <p><strong>3. File-Organization Module</strong></p>
+                <ul>
+                    <li>รู้เกี่ยวกับ files และ logical blocks</li>
+                    <li>แปลง logical block numbers (0,1,2,...,N) เป็น physical addresses</li>
+                    <li>รวม free-space manager ที่ติดตาม unallocated blocks</li>
+                </ul>
+                <p><strong>4. Logical File System (ระดับบนสุด)</strong></p>
+                <ul>
+                    <li>จัดการ metadata (ข้อมูลโครงสร้างยกเว้นเนื้อหาจริง)</li>
+                    <li>จัดการ directory structure</li>
+                    <li>แปลง symbolic file name เป็นตำแหน่งไฟล์</li>
+                    <li>บำรุงรักษา file structure ผ่าน File Control Blocks (FCB)</li>
+                    <li>รับผิดชอบด้าน protection</li>
+                </ul>
+
+                <h3>1.3 File Control Block (FCB) - <span class="page-ref">สไลด์หน้า 2</span></h3>
+                <p><strong>FCB หรือ inode (ใน Linux)</strong> เก็บข้อมูลเกี่ยวกับไฟล์:</p>
+                <p><strong>Metadata ที่เก็บ:</strong></p>
+                <ul>
+                    <li>File permissions (สิทธิ์การเข้าถึง)</li>
+                    <li>File dates (create, access, write)</li>
+                    <li>File owner, group, ACL</li>
+                    <li>File size</li>
+                    <li>File data blocks or pointers to file data blocks</li>
+                </ul>
+                <p><strong>Actual Data:</strong></p>
+                <ul>
+                    <li>File content (เนื้อหาจริงของไฟล์)</li>
+                </ul>
+
+                <hr>
+
+                <h2>2. File-System Operations (การทำงาน)</h2>
+
+                <h3>2.1 โครงสร้างข้อมูล <span class="page-ref">(หน้า 566-567)</span></h3>
+                <p><strong>On-Storage Structures:</strong></p>
+                <ol>
+                    <li><strong>Boot control block</strong> (per volume)
+                        <ul>
+                            <li>ข้อมูลสำหรับ boot OS</li>
+                            <li>UFS: boot block, NTFS: partition boot sector</li>
+                        </ul>
+                    </li>
+                    <li><strong>Volume control block</strong> (per volume)
+                        <ul>
+                            <li>รายละเอียด volume: จำนวน blocks, ขนาด blocks</li>
+                            <li>Free-block count และ pointers</li>
+                            <li>UFS: superblock, NTFS: master file table</li>
+                        </ul>
+                    </li>
+                    <li><strong>Directory structure</strong> (per file system)
+                        <ul>
+                            <li>UFS: file names + inode numbers</li>
+                            <li>NTFS: เก็บใน master file table</li>
+                        </ul>
+                    </li>
+                    <li><strong>Per-file FCB</strong>
+                        <ul>
+                            <li>รายละเอียดแต่ละไฟล์</li>
+                            <li>NTFS: relational database (master file table)</li>
+                        </ul>
+                    </li>
+                </ol>
+                <p><strong>In-Memory Structures:</strong></p>
+                <ol>
+                    <li><strong>Mount table</strong> - ข้อมูล mounted volumes</li>
+                    <li><strong>Directory-structure cache</strong> - directories ที่เข้าถึงล่าสุด</li>
+                    <li><strong>System-wide open-file table</strong> - สำเนา FCB ของไฟล์ที่เปิด</li>
+                    <li><strong>Per-process open-file table</strong> - pointers + current location + access mode</li>
+                    <li><strong>Buffers</strong> - เก็บ file-system blocks</li>
+                </ol>
+
+                <h3>2.2 กระบวนการ Open ไฟล์ <span class="page-ref">(หน้า 567-568, สไลด์หน้า 1)</span></h3>
+                <p>เมื่อเรียก <code>open(file_name)</code>:</p>
+                <ol>
+                    <li>ค้นหา system-wide open-file table ว่ามี process อื่นเปิดไฟล์อยู่หรือไม่</li>
+                    <li>ถ้าเปิดอยู่: สร้าง per-process entry ชี้ไปยัง system-wide table</li>
+                    <li>ถ้ายังไม่เปิด:
+                        <ul>
+                            <li>โหลด directory structure ขึ้น memory</li>
+                            <li>ค้นหา File Control Block (FCB)</li>
+                            <li>คัดลอก FCB ไปเก็บใน system-wide open-file table (kernel memory)</li>
+                            <li>ติดตามจำนวน processes ที่เปิดไฟล์</li>
+                        </ul>
+                    </li>
+                    <li>สร้าง entry ใน per-process table</li>
+                    <li>คืนค่า pointer (file descriptor ใน UNIX, file handle ใน Windows)</li>
+                </ol>
+
+                <h3>2.3 กระบวนการ Read ไฟล์ <span class="page-ref">(สไลด์หน้า 1)</span></h3>
+                <p>เมื่อเรียก <code>read(index)</code>:</p>
+                <ol>
+                    <li>ใช้ index เข้าถึง per-process open-file table</li>
+                    <li>ติดตาม pointer ไปยัง system-wide table</li>
+                    <li>โหลด FCB บน kernel memory (ถ้ายังไม่มี)</li>
+                    <li>เข้าถึง data blocks จาก secondary storage</li>
+                </ol>
+
+                <h3>2.4 กระบวนการ Close ไฟล์ <span class="page-ref">(หน้า 568)</span></h3>
+                <ol>
+                    <li>ลบ per-process table entry</li>
+                    <li>ลด open count ใน system-wide entry</li>
+                    <li>เมื่อทุกคนปิดไฟล์:
+                        <ul>
+                            <li>คัดลอก updated metadata กลับไปยัง directory structure</li>
+                            <li>ลบ system-wide table entry</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <hr>
+
+                <h2>3. Directory Implementation <span class="page-ref">(หน้า 568-570, สไลด์หน้า 3)</span></h2>
+                <p>มี 2 วิธีหลัก:</p>
+
+                <h3>3.1 Linear List <span class="page-ref">(หน้า 569)</span></h3>
+                <p><strong>วิธีการ:</strong></p>
+                <ul>
+                    <li>List ของชื่อไฟล์พร้อม pointers ไปยัง data blocks</li>
+                    <li>เขียนโปรแกรมง่ายแต่ช้า</li>
+                </ul>
+                <p><strong>การทำงาน:</strong></p>
+                <ul>
+                    <li><strong>สร้างไฟล์:</strong> ค้นหาว่าไม่ซ้ำ → เพิ่มที่ท้าย</li>
+                    <li><strong>ลบไฟล์:</strong> ค้นหา → ปล่อย space</li>
+                    <li><strong>ใช้ซ้ำ:</strong> mark unused, attach to free list, copy last entry, หรือใช้ linked list</li>
+                </ul>
+                <p><strong>ข้อเสีย:</strong></p>
+                <ul>
+                    <li>ต้อง <strong>linear search</strong> ทำให้ช้า</li>
+                </ul>
+                <p><strong>การปรับปรุง:</strong></p>
+                <ul>
+                    <li>Software cache สำหรับ directory ที่ใช้บ่อย</li>
+                    <li><strong>Sorted list</strong> ใช้ binary search แต่ทำให้การสร้าง/ลบซับซ้อนขึ้น</li>
+                    <li>โครงสร้าง tree เช่น balanced tree</li>
+                </ul>
+
+                <h3>3.2 Hash Table <span class="page-ref">(หน้า 570)</span></h3>
+                <p><strong>วิธีการ:</strong></p>
+                <ul>
+                    <li>ใช้ linear list + hash data structure</li>
+                    <li>Hash function รับชื่อไฟล์ → คืน pointer ไปยังชื่อใน list</li>
+                    <li>ลด directory search time มาก</li>
+                </ul>
+                <p><strong>ปัญหา:</strong></p>
+                <ol>
+                    <li><strong>Fixed size</strong> ของ hash table</li>
+                    <li><strong>ขึ้นกับ hash function</strong> ที่เกี่ยวข้องกับขนาด</li>
+                </ol>
+                <p><strong>ตัวอย่างปัญหา:</strong></p>
+                <ul>
+                    <li>Hash table 64 entries, hash function → 0-63</li>
+                    <li>เมื่อสร้างไฟล์ที่ 65 ต้องขยายเป็น 128 entries</li>
+                    <li>ต้องมี hash function ใหม่ และ reorganize entries</li>
+                </ul>
+                <p><strong>ทางเลือก:</strong></p>
+                <ul>
+                    <li><strong>Chained-overflow hash table</strong></li>
+                    <li>แต่ละ entry เป็น linked list ได้</li>
+                    <li>อาจช้าลงเล็กน้อยแต่เร็วกว่า linear search</li>
+                </ul>
+
+                <hr>
+
+                <h2>4. Allocation Methods (วิธีจัดสรร - <span class="page-ref">หน้า 570-578, สไลด์หน้า 4-11</span>)</h2>
+                <p>มี 3 วิธีหลัก:</p>
+
+                <h3>4.1 Contiguous Allocation <span class="page-ref">(สไลด์หน้า 4)</span></h3>
+                <p><strong>หลักการ:</strong></p>
+                <ul>
+                    <li>แต่ละไฟล์ครอบครอง contiguous blocks</li>
+                    <li>ไฟล์ที่มี n blocks เริ่มที่ b จะครอบครอง: b, b+1, b+2, ..., b+n−1</li>
+                    <li>Directory entry บันทึก: starting block address + length</li>
+                </ul>
+                <p><strong>ข้อดี:</strong></p>
+                <ul>
+                    <li>Sequential access ง่าย</li>
+                    <li>Direct access ง่าย: block i = b+i</li>
+                    <li>Seek time น้อยสำหรับ HDDs</li>
+                </ul>
+                <p><strong>ข้อเสีย (Major Drawbacks):</strong></p>
+                <ol>
+                    <li><strong>External Fragmentation</strong>
+                        <ul>
+                            <li>พื้นที่ว่างแตกเป็นชิ้นเล็กๆ</li>
+                            <li><strong>วิธีแก้:</strong> Compaction (copy ไฟล์ไปอุปกรณ์อื่น → คัดลอกกลับ)</li>
+                            <li>ใช้เวลามาก ต้องทำเป็นประจำ</li>
+                        </ul>
+                    </li>
+                    <li><strong>File Size Must be Declared</strong>
+                        <ul>
+                            <li>ต้องทราบขนาดล่วงหน้า</li>
+                            <li><strong>วิธีแก้:</strong> ใช้ <strong>extents</strong> (จัดสรรเป็นชิ้นๆ)</li>
+                            <li>แต่ยังมี external fragmentation ถ้า extent sizes ต่างกัน</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h3>4.2 Linked Allocation <span class="page-ref">(สไลด์หน้า 5)</span></h3>
+                <p><strong>หลักการ:</strong></p>
+                <ul>
+                    <li>แต่ละไฟล์เป็น linked list ของ blocks</li>
+                    <li>Blocks อาจกระจายอยู่ทุกที่</li>
+                    <li>Directory มี pointer ไปยัง first และ last blocks</li>
+                    <li>แต่ละ block มี pointer ไปยัง next block</li>
+                </ul>
+                <p><strong>การทำงาน:</strong></p>
+                <ul>
+                    <li><strong>สร้างไฟล์:</strong> pointer = null, size = 0</li>
+                    <li><strong>เขียน:</strong> หา free block → เขียน → link เข้ากับท้าย</li>
+                    <li><strong>อ่าน:</strong> ติดตาม pointers</li>
+                </ul>
+                <p><strong>ข้อดี:</strong></p>
+                <ul>
+                    <li>ไม่มี external fragmentation</li>
+                    <li>ไม่ต้องประกาศขนาดไฟล์</li>
+                    <li>ไฟล์สามารถเติบโตต่อได้</li>
+                </ul>
+                <p><strong>ข้อเสีย (Major Drawbacks):</strong></p>
+                <ol>
+                    <li><strong>Good Only for Sequential Access</strong>
+                        <ul>
+                            <li>หา block i ต้องติดตาม pointers i ครั้ง</li>
+                            <li>แต่ละครั้งอาจต้องอ่านดิสก์และ seek</li>
+                        </ul>
+                    </li>
+                    <li><strong>Pointer Overhead</strong>
+                        <ul>
+                            <li>4 bytes out of 512-byte block = 0.78%</li>
+                            <li>User เห็น blocks เป็น 508 bytes</li>
+                        </ul>
+                    </li>
+                    <li><strong>Reliability of Linked List</strong>
+                        <ul>
+                            <li>Pointer เสียหายอาจ link ผิด</li>
+                            <li><strong>วิธีแก้:</strong> doubly linked lists, เก็บ file name + block number</li>
+                        </ul>
+                    </li>
+                </ol>
+                <p><strong>การแก้ไข: Clusters</strong></p>
+                <ul>
+                    <li>จัด blocks เป็น clusters แล้ว allocate clusters</li>
+                    <li>Pointers ใช้พื้นที่น้อยลง</li>
+                    <li>ปรับปรุง HDD throughput</li>
+                    <li><strong>ข้อเสีย:</strong> เพิ่ม internal fragmentation</li>
+                </ul>
+
+                <h3>4.3 File-Allocation Table (FAT) - <span class="page-ref">สไลด์หน้า 6-8</span></h3>
+                <p><strong>หลักการ:</strong></p>
+                <ul>
+                    <li>Variation ของ linked allocation ที่ดีกว่า</li>
+                    <li>ใช้โดย MS-DOS</li>
+                    <li>จัดสรร storage ส่วนหนึ่งไว้ที่ต้น volume สำหรับตาราง</li>
+                    <li>ตารางมี entry หนึ่งต่อ block, indexed by block number</li>
+                </ul>
+                <p><strong>โครงสร้าง:</strong></p>
+                <pre><code>Directory: test → start block 217
+
+FAT Table:
+Block  | Next
+217    | 618
+618    | 339  
+339    | -1 (EOF)</code></pre>
+                <p><strong>ข้อดี:</strong></p>
+                <ul>
+                    <li>หา block ถัดไปโดยอ่าน FAT ใน memory แทนอ่านดิสก์</li>
+                    <li>Random-access time ดีขึ้น</li>
+                </ul>
+                <p><strong>ข้อเสีย <span class="page-ref">(สไลด์หน้า 7-8)</span>:</strong></p>
+                <p><strong>Internal Fragmentation:</strong></p>
+                <ul>
+                    <li>เพิ่ม cluster size ตาม disk size เพื่อให้ table คงที่</li>
+                    <li>เป้าหมาย: ไม่เปลือง memory</li>
+                    <li>เมื่อ cluster ใหญ่ → internal fragmentation → efficiency ลด</li>
+                </ul>
+                <p><strong>Cluster Efficiency (Standard FAT):</strong></p>
+                <ul>
+                    <li>2K cluster: 98.4% (0-127 MB)</li>
+                    <li>4K cluster: 96.6% (128-255 MB)</li>
+                    <li>8K cluster: 92.9% (256-511 MB)</li>
+                    <li>16K cluster: 85.8% (512-1023 MB)</li>
+                    <li>32K cluster: 73.8% (1024-2047 MB)</li>
+                    <li>64K cluster: 56.6% (2047 MB >)</li>
+                </ul>
+                <p><strong>FAT32:</strong></p>
+                <ul>
+                    <li>4K cluster: 96.6% (> 260MB)</li>
+                    <li>8K cluster: 92.9% (> 8GB)</li>
+                    <li>16K cluster: 85.8% (> 60GB)</li>
+                    <li>32K cluster: 73.8% (> 2TB)</li>
+                </ul>
+                <p><strong>การใช้งาน:</strong></p>
+                <ul>
+                    <li>ไม่ควรใช้ FAT32 กับ partition ใหญ่มาก</li>
+                    <li>ปัจจุบันใช้ NTFS แทน</li>
+                    <li>FAT32 เหมาะกับ flash drive เล็ก</li>
+                    <li><strong>exFAT (FAT64):</strong> ใช้กับ flash drive ทุกขนาด</li>
+                </ul>
+
+                <h3>4.4 Indexed Allocation <span class="page-ref">(สไลด์หน้า 9-11)</span></h3>
+                <p><strong>หลักการ:</strong></p>
+                <ul>
+                    <li>แก้ปัญหา external fragmentation และ size declaration ของ contiguous</li>
+                    <li>ไม่มี FAT → linked allocation ไม่มีประสิทธิภาพสำหรับ direct access</li>
+                    <li><strong>Indexed allocation</strong> รวม pointers ทั้งหมดไว้ที่เดียว: <strong>index block</strong></li>
+                </ul>
+                <p><strong>โครงสร้าง:</strong></p>
+                <ul>
+                    <li>แต่ละไฟล์มี index block (array of addresses)</li>
+                    <li>Entry ที่ i ชี้ไปยัง block ที่ i</li>
+                    <li>Directory มี address ของ index block</li>
+                </ul>
+                <p><strong>การทำงาน:</strong></p>
+                <ul>
+                    <li><strong>สร้าง:</strong> pointers ทั้งหมด = null</li>
+                    <li><strong>เขียน block i:</strong> หา free block → ใส่ address ใน index entry i</li>
+                </ul>
+                <p><strong>ข้อดี:</strong></p>
+                <ul>
+                    <li>รองรับ direct access</li>
+                    <li>ไม่มี external fragmentation</li>
+                </ul>
+                <p><strong>ข้อเสีย:</strong></p>
+                <ul>
+                    <li><strong>Pointer overhead</strong> มากกว่า linked allocation</li>
+                    <li>ไฟล์ 1-2 blocks: linked ใช้ 1 pointer/block, indexed ต้อง allocate index block ทั้งหมด</li>
+                </ul>
+                <p><strong>คำถาม:</strong> Index block ควรมีขนาดเท่าไร?</p>
+                <p><strong>วิธีจัดการขนาดใหญ่:</strong></p>
+                <p><strong>1. Linked Scheme:</strong></p>
+                <ul>
+                    <li>Index block = 1 storage block</li>
+                    <li>สำหรับไฟล์ใหญ่: link หลาย index blocks</li>
+                    <li>Header มีชื่อไฟล์ + disk-block addresses 100 อันแรก</li>
+                    <li>Address ถัดไป = null (ไฟล์เล็ก) หรือ pointer to next index block</li>
+                </ul>
+                <p><strong>2. Multilevel Index:</strong></p>
+                <ul>
+                    <li>First-level index block ชี้ไปยัง second-level index blocks</li>
+                    <li>Second-level ชี้ไปยัง file blocks</li>
+                    <li>ขยายได้เป็น 3-4 levels</li>
+                    <li>ด้วย 4,096-byte blocks และ 4-byte pointers: 1,024 pointers/block</li>
+                    <li>Two levels: 1,048,576 data blocks = 4 GB</li>
+                </ul>
+                <p><strong>3. Combined Scheme (UNIX inode) - <span class="page-ref">สไลด์หน้า 10-11</span>:</strong></p>
+                <p>เก็บ 15 pointers แรกใน file's inode:</p>
+                <ul>
+                    <li><strong>12 pointers แรก:</strong> ชี้ไปยัง <strong>direct blocks</strong> (blocks ที่มีข้อมูล)
+                        <ul>
+                            <li>สำหรับไฟล์เล็ก (≤12 blocks) ไม่ต้องใช้ index block แยก</li>
+                            <li>Block size 4 KB: เข้าถึงได้ตรง 48 KB</li>
+                        </ul>
+                    </li>
+                    <li><strong>3 pointers ถัดไป:</strong> ชี้ไปยัง <strong>indirect blocks:</strong>
+                        <ol>
+                            <li><strong>Single indirect block:</strong> index block ที่มี addresses ของ data blocks</li>
+                            <li><strong>Double indirect block:</strong> block ที่มี addresses ของ blocks ที่มี addresses ของ data blocks</li>
+                            <li><strong>Triple indirect block:</strong> 3 ระดับ</li>
+                        </ol>
+                    </li>
+                </ul>
+                <p><strong>ตัวอย่างการคำนวณ (block=4KB, pointer=4 bytes):</strong></p>
+                <p>1 ไฟล์จุได้สูงสุด:</p>
+                <ul>
+                    <li>Direct: 12 × 4k = 49,152 bytes</li>
+                    <li>Single indirect: (4k/4) × 4k = 4,194,304 bytes</li>
+                    <li>Double indirect: (4k/4)² × 4k = 4,294,967,296 bytes</li>
+                    <li>Triple indirect: (4k/4)³ × 4k = 4,398,046,511,104 bytes</li>
+                    <li><strong>รวม: ≈ 4 TB</strong></li>
+                </ul>
+                <p><strong>ข้อดี Combined Scheme:</strong></p>
+                <ul>
+                    <li>ไฟล์เล็กไม่เสีย space สำหรับ index block</li>
+                    <li>ไฟล์ใหญ่รองรับได้ด้วย indirect blocks</li>
+                </ul>
+
+                <h3>4.5 Performance Comparison <span class="page-ref">(หน้า 577-578)</span></h3>
+                <p><strong>Contiguous:</strong></p>
+                <ul>
+                    <li>1 access เพื่อหา block</li>
+                    <li>คำนวณ address ได้ทันที</li>
+                </ul>
+                <p><strong>Linked:</strong></p>
+                <ul>
+                    <li>เก็บ next block address ใน memory</li>
+                    <li>ดีสำหรับ sequential access</li>
+                    <li>Direct access: อาจต้องอ่าน i blocks</li>
+                    <li><strong>ไม่เหมาะสำหรับ direct access applications</strong></li>
+                </ul>
+                <p><strong>Indexed:</strong></p>
+                <ul>
+                    <li>ถ้า index block ใน memory: access ตรงได้</li>
+                    <li>ต้องใช้ memory space มาก</li>
+                    <li>ถ้า memory ไม่พอ: ต้องอ่าน index block ก่อน</li>
+                    <li>Two-level: อาจต้องอ่าน 2 index-block reads</li>
+                    <li>Performance ขึ้นกับ index structure, file size, block position</li>
+                </ul>
+                <p><strong>ระบบบางอัน:</strong></p>
+                <ul>
+                    <li>Contiguous สำหรับไฟล์เล็ก (3-4 blocks)</li>
+                    <li>สลับเป็น indexed เมื่อไฟล์โต</li>
+                    <li>Average performance ดี</li>
+                </ul>
+                <p><strong>NVM Devices:</strong></p>
+                <ul>
+                    <li>ไม่มี disk head seeks</li>
+                    <li>ต้องใช้ algorithms ใหม่</li>
+                    <li>เน้นลด instruction count และ path ระหว่าง storage กับ application</li>
+                </ul>
+
+                <hr>
+
+                <h2>5. Free-Space Management <span class="page-ref">(หน้า 578-582, สไลด์หน้า 12-14)</span></h2>
+                <p>ต้องนำ space จากไฟล์ที่ลบกลับมาใช้ใหม่</p>
+                <p><strong>Free-space list</strong> บันทึก device blocks ที่ว่างทั้งหมด</p>
+
+                <h3>5.1 Bit Vector (Bitmap) - <span class="page-ref">สไลด์หน้า 12</span></h3>
+                <p><strong>วิธีการ:</strong></p>
+                <ul>
+                    <li>แต่ละ block = 1 bit</li>
+                    <li>Block ว่าง: bit = 1</li>
+                    <li>Block allocated: bit = 0</li>
+                </ul>
+                <p><strong>ตัวอย่าง:</strong></p>
+                <pre><code>Blocks 2,3,4,5,8,9,10,11,12,13,17,18,25,26,27 ว่าง
+Bitmap: 001111001111110001100000011100000...</code></pre>
+                <p><strong>ข้อดี:</strong></p>
+                <ul>
+                    <li>เรียบง่าย</li>
+                    <li>มีประสิทธิภาพในการหา free block หรือ n consecutive free blocks</li>
+                </ul>
+                <p><strong>เทคนิคหา First Free Block:</strong></p>
+                <ul>
+                    <li>ตรวจสอบแต่ละ word ว่า ≠ 0</li>
+                    <li>Word แรกที่ ≠ 0 → scan หา 1 bit แรก</li>
+                    <li>คำนวณ block number:
+                        <pre><code>(bits per word) × (0-value words) + offset of first 1 bit</code></pre>
+                    </li>
+                </ul>
+                <p><strong>ตัวอย่างการคำนวณ:</strong></p>
+                <pre><code>1TB disk, 4KB blocks ต้องการ bitmap เท่าไร?
+1TB / 4KB = 2⁴⁰ / 2¹² = 2²⁸ blocks
+1 byte เก็บได้ 8 blocks
+2²⁸ / 8 = 2²⁵ bytes = 32 MB</code></pre>
+                <p><strong>ข้อเสีย:</strong></p>
+                <ul>
+                    <li>ไม่มีประสิทธิภาพถ้า vector ไม่อยู่ใน main memory</li>
+                    <li>ต้อง written to device occasionally</li>
+                    <li>สำหรับ device ใหญ่ใช้ space มาก:
+                        <ul>
+                            <li>1.3-GB disk (512-byte blocks): >332 KB bitmap</li>
+                            <li>Clustering (groups of 4): ~83 KB/disk</li>
+                            <li>1-TB disk (4-KB blocks): 32 MB</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3>5.2 Linked List <span class="page-ref">(สไลด์หน้า 13)</span></h3>
+                <p><strong>วิธีการ:</strong></p>
+                <ul>
+                    <li>Link free blocks เข้าด้วยกัน</li>
+                    <li>เก็บ pointer ไปยัง first free block และ cache ใน memory</li>
+                    <li>First block มี pointer to next free block</li>
+                </ul>
+                <p><strong>ตัวอย่าง:</strong></p>
+                <pre><code>Free-space list head → Block 2
+Block 2 contains: 3,4,5,8,9
+Block 9 contains: 10,11,12,13,17
+Block 17 contains: 18,25,26,27,-1</code></pre>
+                <p><strong>ข้อดี:</strong></p>
+                <ul>
+                    <li>ไม่เสีย space</li>
+                    <li>ใช้ first block ได้ทันที</li>
+                    <li>FAT method รวม accounting เข้ากับ allocation structure</li>
+                </ul>
+                <p><strong>ข้อเสีย:</strong></p>
+                <ul>
+                    <li>ไม่มีประสิทธิภาพ</li>
+                    <li>ต้องใช้ I/O มาก</li>
+                    <li>แต่โชคดีที่ traverse free list ไม่บ่อย</li>
+                </ul>
+
+                <h3>5.3 Grouping <span class="page-ref">(สไลด์หน้า 13)</span></h3>
+                <p><strong>วิธีการ:</strong></p>
+                <ul>
+                    <li>Modification ของ free-list approach</li>
+                    <li>เก็บ addresses ของ n free blocks ใน first free block</li>
+                    <li>n−1 blocks แรกเป็น free จริง</li>
+                    <li>Block สุดท้ายมี addresses ของ free blocks อีก n อัน</li>
+                </ul>
+                <p><strong>ข้อดี:</strong></p>
+                <ul>
+                    <li>อ่าน 1 block ได้ free blocks จำนวนมาก</li>
+                    <li>1 block เก็บ pointer ได้หลายตัว (เช่น 4k/4 = 1,024)</li>
+                </ul>
+
+                <h3>5.4 Counting <span class="page-ref">(สไลด์หน้า 14)</span></h3>
+                <p><strong>วิธีการ:</strong></p>
+                <ul>
+                    <li>ใช้ข้อเท็จจริงที่ contiguous blocks มักถูก allocated/freed พร้อมกัน</li>
+                    <li>แทนที่จะเก็บ n free block addresses เก็บ:
+                        <ul>
+                            <li>Address ของ first free block</li>
+                            <li>Number (n) ของ contiguous blocks ที่ตามหลัง</li>
+                        </ul>
+                    </li>
+                </ul>
+                <p><strong>ตัวอย่าง:</strong></p>
+                <pre><code>Block | Count
+2     | 4      (blocks 2-5)
+8     | 6      (blocks 8-13)
+17    | 2      (blocks 17-18)
+25    | 3      (blocks 25-27)</code></pre>
+                <p><strong>ข้อเสีย:</strong></p>
+                <ul>
+                    <li>ถ้าพื้นที่กระจัดกระจาย ตารางจะใหญ่มาก</li>
+                </ul>
+
+                <h3>5.5 Space Maps (ใน ZFS)</h3>
+                <p><strong>ที่มา:</strong></p>
+                <ul>
+                    <li>Oracle's ZFS (Zettabyte File System) ใน Solaris</li>
+                    <li>รองรับจำนวนไฟล์และ file systems มหาศาล</li>
+                    <li>Metadata I/O มี performance impact มาก</li>
+                </ul>
+                <p><strong>วิธีการ:</strong></p>
+                <ul>
+                    <li>แบ่ง space เป็น <strong>metaslabs</strong> (chunks of manageable size)</li>
+                    <li>แต่ละ metaslab มี <strong>space map</strong></li>
+                    <li>ใช้ <strong>counting algorithm</strong> + <strong>log-structured techniques</strong></li>
+                    <li>Space map = log ของ block activity (allocating & freeing) ใน time order</li>
+                </ul>
+                <p><strong>เมื่อ allocate/free space:</strong></p>
+                <ol>
+                    <li>โหลด space map เข้า memory (balanced-tree structure)</li>
+                    <li>Indexed by offset, มีประสิทธิภาพมาก</li>
+                    <li>Replay log เข้า structure</li>
+                    <li>In-memory space map = ตัวแทนที่แม่นยำของ allocated/free space</li>
+                    <li>ZFS condense map โดยรวม contiguous free blocks</li>
+                    <li>Update บนดิสก์เป็นส่วนหนึ่งของ transaction-oriented operations</li>
+                    <li>Block requests ยังเกิดได้ระหว่าง collection/sorting</li>
+                    <li>ZFS ตอบสนองจาก log</li>
+                    <li><strong>Log + balanced tree = free list</strong></li>
+                </ol>
+
+                <h3>5.6 TRIMing Unused Blocks</h3>
+                <p><strong>สำหรับ HDDs:</strong></p>
+                <ul>
+                    <li>ต้องการเฉพาะ free list</li>
+                    <li>Freed blocks เก็บข้อมูลจนกว่าจะถูกเขียนทับ</li>
+                </ul>
+                <p><strong>สำหรับ NVM Flash-based Storage:</strong></p>
+                <ul>
+                    <li>มีปัญหา: ต้อง erased ก่อนเขียน</li>
+                    <li>Erases ทำเป็น chunks ขนาดใหญ่ (blocks ของ pages)</li>
+                    <li>ใช้เวลานาน</li>
+                </ul>
+                <p><strong>Mechanism ใหม่:</strong></p>
+                <ul>
+                    <li>File system แจ้ง storage device ว่า page ว่างและสามารถ erase ได้</li>
+                    <li><strong>ATA drives:</strong> ใช้ <strong>TRIM</strong></li>
+                    <li><strong>NVMe storage:</strong> ใช้ <strong>unallocate command</strong></li>
+                    <li>ช่วยให้ storage space พร้อมสำหรับเขียน</li>
+                </ul>
+                <p><strong>ผลลัพธ์:</strong></p>
+                <ul>
+                    <li>Garbage collection และ erase เกิดก่อนที่ device เกือบเต็ม</li>
+                    <li>Device ให้ performance สม่ำเสมอมากขึ้น</li>
+                    <li>หากไม่มี: เกิด <strong>write cliff</strong> (ประสิทธิภาพลดลงทันที)</li>
+                </ul>
+
+                <hr>
+
+                <h2>6. Efficiency and Performance <span class="page-ref">(หน้า 582-585)</span></h2>
+                <p>Disks เป็น bottleneck หลัก (แม้ NVM ก็ยังช้ากว่า CPU/memory)</p>
+
+                <h3>6.1 Efficiency (ประสิทธิภาพ)</h3>
+                <p><strong>การใช้ Storage Space อย่างมีประสิทธิภาพ:</strong></p>
+                <p><strong>ตัวอย่าง UNIX inodes:</strong></p>
+                <ul>
+                    <li>Preallocated บน volume</li>
+                    <li>แม้ดิสก์ว่าง ก็มี space หายไปเพราะ inodes</li>
+                    <li>แต่ช่วยปรับปรุง performance: data blocks อยู่ใกล้ inode → ลด seek time</li>
+                </ul>
+                <p><strong>Clustering Scheme:</strong></p>
+                <ul>
+                    <li>ปรับปรุง file-seek และ file-transfer performance</li>
+                    <li>แลกกับ internal fragmentation</li>
+                    <li>BSD UNIX: ปรับ cluster size ตามที่ไฟล์โต</li>
+                </ul>
+                <p><strong>ข้อมูลใน Directory:</strong></p>
+                <ul>
+                    <li>"Last write date" - กำหนดว่าต้อง backup</li>
+                    <li>"Last access date" - กำหนดเมื่อถูกอ่านล่าสุด</li>
+                    <li><strong>ผลกระทบ:</strong> เมื่ออ่านไฟล์ ต้อง read → change → write directory block กลับ</li>
+                    <li>ไม่มีประสิทธิภาพสำหรับไฟล์ที่เข้าถึงบ่อย</li>
+                    <li>บางระบบไม่ update access time หรือมี switch เปิด/ปิด</li>
+                </ul>
+                <p><strong>Pointer Size:</strong></p>
+                <ul>
+                    <li>32-bit pointers: จำกัด 2³² = 4 GB</li>
+                    <li>64-bit pointers: ไฟล์ใหญ่มากได้ แต่ใช้ space มากขึ้น</li>
+                    <li>Allocation methods ใช้ storage space มากขึ้น</li>
+                </ul>
+                <p><strong>ตัวอย่างปัญหา MS-DOS:</strong></p>
+                <ul>
+                    <li>IBM PC XT: 10-MB HDD, MS-DOS FAT (32 MB max)</li>
+                    <li>FAT entry 12 bits → 8-KB cluster</li>
+                    <li>เมื่อ disks > 100 MB ต้องแก้ไข structures</li>
+                    <li>FAT ขยายเป็น 16 bits แล้ว 32 bits</li>
+                    <li>ผู้ใช้หลายล้านคนไม่สะดวก</li>
+                </ul>
+                <p><strong>ZFS File System:</strong></p>
+                <ul>
+                    <li>ใช้ 128-bit pointers</li>
+                    <li>ตามทฤษฎีไม่ต้องขยาย</li>
+                    <li>มวลของอุปกรณ์ที่เก็บ 2¹²⁸ bytes ≈ 272 trillion kg</li>
+                </ul>
+                <p><strong>Dynamic Allocation:</strong></p>
+                <ul>
+                    <li>Solaris เดิม: fixed-length structures (process table, open-file table)</li>
+                    <li>เต็มแล้วไม่สามารถสร้าง processes/เปิดไฟล์ใหม่</li>
+                    <li>ต้อง recompile kernel และ reboot</li>
+                    <li>Modern systems: เกือบทุก kernel structure allocated dynamically</li>
+                    <li>ลด artificial limits</li>
+                    <li>แต่ algorithms ซับซ้อนขึ้น, ระบบช้าลงเล็กน้อย</li>
+                </ul>
+
+                <h3>6.2 Performance</h3>
+                <p><strong>1. Disk Controller Cache:</strong></p>
+                <ul>
+                    <li>Controllers มี local memory สำหรับ on-board cache</li>
+                    <li>ใหญ่พอสำหรับ entire tracks/blocks</li>
+                    <li>HDD: track ถูกอ่านเข้า disk cache → ถ่ายโอน sectors ที่ต้องการ</li>
+                </ul>
+                <p><strong>2. Buffer Cache:</strong></p>
+                <ul>
+                    <li>Section of main memory แยกต่างหาก</li>
+                    <li>เก็บ blocks ภายใต้สมมติฐานว่าจะถูกใช้อีกเร็วๆ นี้</li>
+                </ul>
+                <p><strong>3. Page Cache:</strong></p>
+                <ul>
+                    <li>ใช้ virtual memory techniques</li>
+                    <li>Cache file data เป็น pages แทน blocks</li>
+                    <li>มีประสิทธิภาพมากกว่า caching ผ่าน physical disk blocks</li>
+                    <li>Solaris, Linux, Windows ใช้ page caching สำหรับทั้ง process pages และ file data</li>
+                    <li>เรียกว่า <strong>unified virtual memory</strong></li>
+                </ul>
+                <p><strong>4. Unified Buffer Cache:</strong></p>
+                <p><strong>ก่อนมี Unified Buffer Cache:</strong></p>
+                <ul>
+                    <li>2 วิธีเปิดไฟล์: memory mapping หรือ read()/write()</li>
+                    <li>ถ้าไม่มี unified: เกิด <strong>double caching</strong>
+                        <ul>
+                            <li>Memory-mapped ใช้ 2 caches: page cache + buffer cache</li>
+                            <li>ต้อง copy จาก buffer cache → page cache</li>
+                        </ul>
+                    </li>
+                    <li><strong>ผลกระทบ:</strong>
+                        <ul>
+                            <li>เสีย memory</li>
+                            <li>เสีย CPU และ I/O cycles</li>
+                            <li>อาจเกิด inconsistencies</li>
+                        </ul>
+                    </li>
+                </ul>
+                <p><strong>เมื่อมี Unified Buffer Cache:</strong></p>
+                <ul>
+                    <li>ทั้ง memory mapping และ read()/write() ใช้ page cache เดียวกัน</li>
+                    <li>หลีกเลี่ยง double caching</li>
+                    <li>Virtual memory system จัดการ file-system data</li>
+                </ul>
+                <p><strong>Evolution ของ Solaris Page-Caching:</strong></p>
+                <ul>
+                    <li><strong>Solaris 2.5.1:</strong> ไม่แยกระหว่าง allocate pages ให้ process กับ page cache
+                        <ul>
+                            <li>ระบบที่ทำ I/O มาก → ใช้ memory ส่วนใหญ่สำหรับ caching</li>
+                            <li>Page scanner reclaim pages จาก processes มากกว่า cache</li>
+                        </ul>
+                    </li>
+                    <li><strong>Solaris 2.6 และ 7:</strong> Implement <strong>priority paging</strong>
+                        <ul>
+                            <li>Page scanner ให้ priority กับ process pages</li>
+                        </ul>
+                    </li>
+                    <li><strong>Solaris 8:</strong> Fixed limit สำหรับ process pages และ file-system cache
+                        <ul>
+                            <li>ป้องกันไม่ให้อันหนึ่งบังคับอีกอันออก</li>
+                        </ul>
+                    </li>
+                    <li><strong>Solaris 9 และ 10:</strong> เปลี่ยน algorithms อีกเพื่อ maximize memory use และ minimize thrashing</li>
+                </ul>
+                <p><strong>Synchronous vs Asynchronous Writes:</strong></p>
+                <p><strong>Synchronous writes:</strong></p>
+                <ul>
+                    <li>เกิดตามลำดับที่ storage subsystem รับ</li>
+                    <li>ไม่ buffered</li>
+                    <li>Caller ต้องรอให้ข้อมูลถึง drive</li>
+                </ul>
+                <p><strong>Asynchronous write:</strong></p>
+                <ul>
+                    <li>ข้อมูลเก็บใน cache, control คืนสู่ caller</li>
+                    <li>Writes ส่วนใหญ่เป็น asynchronous</li>
+                    <li>Metadata writes บางอันอาจเป็น synchronous</li>
+                    <li>Databases ใช้ synchronous สำหรับ atomic transactions</li>
+                </ul>
+                <p><strong>Page Cache Optimization:</strong></p>
+                <ul>
+                    <li>ใช้ replacement algorithms ต่างกันตามประเภท access</li>
+                    <li><strong>Free-behind:</strong> ลบ page ทันทีที่ page ถัดไปถูก request
+                        <ul>
+                            <li>สำหรับ sequential access: previous pages ไม่น่าจะใช้อีก</li>
+                        </ul>
+                    </li>
+                    <li><strong>Read-ahead:</strong> อ่าน requested page + หลาย subsequent pages
+                        <ul>
+                            <li>Pages เหล่านี้น่าจะถูก request หลัง current page</li>
+                            <li>ดึงข้อมูลใน one transfer ประหยัดเวลามาก</li>
+                        </ul>
+                    </li>
+                </ul>
+                <p><strong>Interactions:</strong></p>
+                <ul>
+                    <li>Page cache + file system + device drivers ทำงานร่วมกัน</li>
+                    <li>Pages buffered ใน cache</li>
+                    <li>Device driver จัดเรียง output queue ตาม device address</li>
+                    <li>ช่วย minimize disk-head seeks</li>
+                    <li>Process เขียนเข้า cache → ระบบ asynchronously เขียนเมื่อสะดวก</li>
+                </ul>
+
+                <hr>
+
+                <h2>7. File-System Internals (Chapter 15)</h2>
+
+                <h3>7.1 File Systems Overview <span class="page-ref">(หน้า 597-598, สไลด์หน้า 15)</span></h3>
+                <p><strong>ความหลากหลาย:</strong></p>
+                <ul>
+                    <li>คอมพิวเตอร์มีไฟล์หลายพัน-หลายพันล้านไฟล์</li>
+                    <li>เก็บบน random-access storage devices:
+                        <ul>
+                            <li>Hard disk drives</li>
+                            <li>Optical disks</li>
+                            <li>Nonvolatile memory devices</li>
+                        </ul>
+                    </li>
+                </ul>
+                <p><strong>การจัดระเบียบ:</strong></p>
+                <ul>
+                    <li>Devices แบ่งเป็น <strong>partitions</strong> ที่เก็บ <strong>volumes</strong></li>
+                    <li>Volumes เก็บ <strong>file systems</strong></li>
+                    <li>Volume อาจครอบคลุมหลาย partitions</li>
+                </ul>
+                <p><strong>ตัวอย่าง Solaris File Systems:</strong></p>
+                <ul>
+                    <li><strong>tmpfs:</strong> temporary, ใน volatile memory, erase เมื่อ reboot/crash</li>
+                    <li><strong>objfs:</strong> virtual (interface to kernel), ให้ debuggers เข้าถึง kernel symbols</li>
+                    <li><strong>ctfs:</strong> virtual, รักษา "contract" information สำหรับ processes</li>
+                    <li><strong>lofs:</strong> loop back, อนุญาตให้ file system หนึ่งถูกเข้าถึงแทนอีกอัน</li>
+                    <li><strong>procfs:</strong> virtual, นำเสนอข้อมูล processes เป็น file system</li>
+                    <li><strong>ufs, zfs:</strong> general-purpose file systems</li>
+                </ul>
+                <p><strong>File Systems ทั่วไป <span class="page-ref">(สไลด์หน้า 15)</span>:</strong></p>
+                <p><strong>Linux:</strong> ext3, ext4</p>
+                <p><strong>Windows:</strong> FAT32, NTFS</p>
+                <p><strong>macOS, iOS:</strong></p>
+                <ul>
+                    <li>HFS Plus (HFS+)</li>
+                    <li>Apple File System (APFS) - ปี 2017</li>
+                </ul>
+                <p><strong>หมายเหตุ:</strong></p>
+                <ul>
+                    <li>ระบบไฟล์ไม่เปลี่ยนบ่อย (ประมาณ 10 ปีครั้ง)</li>
+                    <li><strong>exFAT (FAT64):</strong> ใช้กับ flash drive ทุกขนาด</li>
+                </ul>
+
+                <h3>7.2 File-System Mounting <span class="page-ref">(หน้า 598-600)</span></h3>
+                <p><strong>หลักการ:</strong></p>
+                <ul>
+                    <li>ไฟล์ต้อง opened ก่อนใช้</li>
+                    <li>File system ต้อง <strong>mounted</strong> ก่อนจะพร้อมใช้</li>
+                    <li>Directory structure อาจสร้างจาก multiple file-system-containing volumes</li>
+                </ul>
+                <p><strong>ขั้นตอน Mount:</strong></p>
+                <ol>
+                    <li>OS ได้รับชื่อ device และ <strong>mount point</strong></li>
+                    <li>บางระบบต้องระบุ file-system type</li>
+                    <li>บางระบบตรวจสอบ structures และกำหนดประเภท</li>
+                    <li>OS ตรวจสอบว่า device มี valid file system</li>
+                    <li>ขอให้ device driver อ่าน directory และตรวจสอบ format</li>
+                    <li>OS บันทึกใน directory structure ว่า file system mounted ที่ mount point</li>
+                    <li>Scheme ช่วยให้ traverse directory, สลับระหว่าง file systems</li>
+                </ol>
+                <p><strong>Semantics:</strong></p>
+                <ul>
+                    <li>อาจ disallow mount บน directory ที่มีไฟล์</li>
+                    <li>หรือทำให้ไฟล์เดิม obscure จนกว่าจะ unmount</li>
+                    <li>อาจอนุญาตให้ file system เดียว mounted ซ้ำที่หลาย mount points</li>
+                    <li>หรืออนุญาตเพียง one mount per file system</li>
+                </ul>
+                <p><strong>Automatic Mounting:</strong></p>
+                <p><strong>macOS:</strong></p>
+                <ul>
+                    <li>เมื่อพบดิสก์ → ค้นหา file system</li>
+                    <li>ถ้าพบ → mount ภายใต้ <code>/Volumes</code></li>
+                    <li>เพิ่ม folder icon labeled ด้วยชื่อ file system</li>
+                </ul>
+                <p><strong>Windows:</strong></p>
+                <ul>
+                    <li>Extended two-level directory structure</li>
+                    <li>Devices/volumes assigned drive letters</li>
+                    <li>Path: <code>drive-letter:\path\to\file</code></li>
+                    <li>เวอร์ชันใหม่: mount ทุกที่ใน directory tree (เหมือน UNIX)</li>
+                    <li>Discover devices และ mount อัตโนมัติเมื่อ boot</li>
+                </ul>
+                <p><strong>UNIX:</strong></p>
+                <ul>
+                    <li>Mount command explicit</li>
+                    <li>Configuration file มี list of devices และ mount points สำหรับ automatic mounting</li>
+                    <li>Mounts อื่นๆ execute manually</li>
+                </ul>
+
+                <h3>7.3 Partitions and Mounting <span class="page-ref">(หน้า 601)</span></h3>
+                <p><strong>ประเภท Partitions:</strong></p>
+                <p><strong>1. Raw Disk:</strong></p>
+                <ul>
+                    <li>Partition ที่ "raw" ไม่มี file system</li>
+                    <li><strong>ใช้:</strong>
+                        <ul>
+                            <li>UNIX swap space (format ของตัวเอง)</li>
+                            <li>Databases (format data เอง)</li>
+                            <li>RAID systems (เก็บ bitmaps)</li>
+                            <li>Miniature databases (เก็บ RAID configuration)</li>
+                        </ul>
+                    </li>
+                </ul>
+                <p><strong>2. Cooked Partition:</strong></p>
+                <ul>
+                    <li>มี file system</li>
+                    <li>มี <strong>boot information</strong> ถ้า bootable</li>
+                    <li>Boot information = sequential series of blocks โหลดเป็น image</li>
+                    <li>Execution เริ่มที่ predefined location (เช่น first byte)</li>
+                    <li>Image = <strong>bootstrap loader</strong> รู้เพียงพอเกี่ยวกับ file-system structure</li>
+                </ul>
+                <p><strong>Boot Loader และ Dual-Boot:</strong></p>
+                <ul>
+                    <li>Boot loader สามารถ boot หลาย operating systems</li>
+                    <li>ผู้ใช้เลือก OS หนึ่งจากหลาย available</li>
+                    <li>อ่านและเข้าใจหลาย file systems</li>
+                    <li>Drive มีหลาย partitions, แต่ละอันมี file system type และ OS ต่างกัน</li>
+                    <li>ถ้า boot loader ไม่เข้าใจ format เฉพาะ → OS นั้นไม่ bootable</li>
+                    <li>นี่คือเหตุผลที่เพียงบาง file systems รองรับเป็น root file systems</li>
+                </ul>
+
+                <hr>
+
+                <h2>8. Recovery - Journaling File Systems <span class="page-ref">(หน้า 586-587, สไลด์หน้า 16)</span></h2>
+
+                <h3>8.1 ปัญหา</h3>
+                <ul>
+                    <li>Files และ directories เก็บทั้งใน main memory และบนดิสก์</li>
+                    <li>System failure อาจทำให้สูญเสียข้อมูลหรือ inconsistent</li>
+                </ul>
+
+                <h3>8.2 Journaling File System</h3>
+                <p><strong>คุณสมบัติ:</strong></p>
+                <ul>
+                    <li>Built-in fault-tolerance</li>
+                    <li>ติดตามการเปลี่ยนแปลงที่ยังไม่ committed</li>
+                    <li>บันทึก intentions ใน data structure เรียกว่า <strong>"journal"</strong></li>
+                    <li>Journal = <strong>circular log</strong></li>
+                </ul>
+                <p><strong>ข้อดี:</strong></p>
+                <ul>
+                    <li>System crash/power failure: กลับมาใช้งานได้เร็วขึ้น</li>
+                    <li>Likelihood ต่ำกว่าที่จะ corrupt</li>
+                </ul>
+                <p><strong>วิธีทำงาน:</strong></p>
+                <ol>
+                    <li>ก่อนเปลี่ยน metadata → บันทึก transactions ใน journal</li>
+                    <li>Transactions ถูกนำไปใช้กับ file system</li>
+                    <li>เมื่อเสร็จ → ลบออกจาก journal</li>
+                </ol>
+
+                <h3>8.3 ตัวอย่างการลบไฟล์ <span class="page-ref">(สไลด์หน้า 16)</span></h3>
+                <p><strong>Unix file system - 3 ขั้นตอน:</strong></p>
+                <ol>
+                    <li>Removing directory entry</li>
+                    <li>Releasing inode to pool of free inodes</li>
+                    <li>Returning disk blocks to pool of free blocks</li>
+                </ol>
+                <p><strong>ปัญหาถ้า Crash:</strong></p>
+                <p><strong>Crash ระหว่าง Step 1 และ 2:</strong></p>
+                <ul>
+                    <li>เกิด <strong>orphaned inode</strong> (ไม่มี directory entry ชี้ไป)</li>
+                    <li>เกิด <strong>storage leak</strong> (ไม่สามารถใช้ inode กับไฟล์ใหม่)</li>
+                </ul>
+                <p><strong>Crash ระหว่าง Step 2 และ 3:</strong></p>
+                <ul>
+                    <li>Blocks ที่เคยใช้ไม่สามารถใช้สำหรับไฟล์ใหม่</li>
+                    <li>ลด storage capacity</li>
+                </ul>
+
+                <h3>8.4 ระบบที่ใช้ Journaling</h3>
+                <ul>
+                    <li><strong>ext3, ext4</strong> (Linux)</li>
+                    <li><strong>NTFS</strong> (Windows)</li>
+                    <li><strong>HFS+</strong> (macOS ก่อน APFS)</li>
+                </ul>
+
+                <hr>
+
+                <h2>สรุปภาพรวม</h2>
+
+                <h3>File-System Implementation (Chapter 14)</h3>
+                <p><strong>โครงสร้างหลัก:</strong></p>
+                <ul>
+                    <li><strong>Layered:</strong> I/O control → basic → organization → logical</li>
+                    <li><strong>FCB/inode:</strong> metadata ของไฟล์</li>
+                    <li><strong>On-storage:</strong> boot block, volume control, directory, FCB</li>
+                    <li><strong>In-memory:</strong> mount table, caches, open-file tables, buffers</li>
+                </ul>
+                <p><strong>Directory:</strong></p>
+                <ul>
+                    <li><strong>Linear List:</strong> ง่ายแต่ช้า</li>
+                    <li><strong>Hash Table:</strong> เร็วแต่ fixed size</li>
+                </ul>
+                <p><strong>Allocation Methods:</strong></p>
+                <table border="1" style="border-collapse: collapse; width: 100%;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 8px;">Method</th>
+                            <th style="padding: 8px;">ข้อดี</th>
+                            <th style="padding: 8px;">ข้อเสีย</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 8px;"><strong>Contiguous</strong></td>
+                            <td style="padding: 8px;">เร็ว, direct access ดี</td>
+                            <td style="padding: 8px;">External frag, ต้องประกาศขนาด</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px;"><strong>Linked</strong></td>
+                            <td style="padding: 8px;">ยืดหยุ่น, ไม่มี external frag</td>
+                            <td style="padding: 8px;">ช้าสำหรับ direct access</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px;"><strong>FAT</strong></td>
+                            <td style="padding: 8px;">ดีกว่า linked</td>
+                            <td style="padding: 8px;">Internal frag</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px;"><strong>Indexed</strong></td>
+                            <td style="padding: 8px;">Direct access ดี</td>
+                            <td style="padding: 8px;">Pointer overhead</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p><strong>Free-Space Management:</strong></p>
+                <ul>
+                    <li><strong>Bit Vector:</strong> ง่าย แต่ใช้ memory มาก</li>
+                    <li><strong>Linked List:</strong> ไม่เสีย space แต่ช้า</li>
+                    <li><strong>Grouping:</strong> อ่านครั้งเดียวได้เยอะ</li>
+                    <li><strong>Counting:</strong> เก็บเป็น contiguous</li>
+                    <li><strong>Space Maps (ZFS):</strong> มีประสิทธิภาพสูง</li>
+                </ul>
+                <p><strong>Performance:</strong></p>
+                <ul>
+                    <li>Disk/Page/Buffer cache</li>
+                    <li>Unified buffer cache</li>
+                    <li>Read-ahead, Free-behind</li>
+                    <li>Asynchronous writes</li>
+                </ul>
+
+                <h3>File-System Internals (Chapter 15)</h3>
+                <p><strong>File Systems Types:</strong></p>
+                <ul>
+                    <li>tmpfs, objfs, ctfs, lofs, procfs (special-purpose)</li>
+                    <li>ufs, zfs, ext3/4, NTFS, APFS (general-purpose)</li>
+                </ul>
+                <p><strong>Mounting:</strong></p>
+                <ul>
+                    <li>ต้อง mount ก่อนใช้</li>
+                    <li>ระบุ device + mount point</li>
+                    <li>ตรวจสอบ valid file system</li>
+                </ul>
+                <p><strong>Partitions:</strong></p>
+                <ul>
+                    <li><strong>Raw:</strong> ไม่มี file system (swap, databases, RAID)</li>
+                    <li><strong>Cooked:</strong> มี file system + boot info</li>
+                </ul>
+                <p><strong>Recovery:</strong></p>
+                <ul>
+                    <li><strong>Journaling:</strong> บันทึก intentions ใน journal</li>
+                    <li>ช่วยกู้คืนเร็ว, ลด corruption</li>
+                </ul>
+
+                <hr>
+
+                <h2>ข้อสังเกตสำคัญ</h2>
+                <ol>
+                    <li><strong>Trade-offs:</strong> แต่ละวิธีมีข้อดี-ข้อเสีย ต้องเลือกตามการใช้งาน</li>
+                    <li><strong>Performance Critical:</strong> Disks ช้ามาก ต้องใช้หลายเทคนิค:
+                        <ul>
+                            <li>Caching (หลายระดับ)</li>
+                            <li>Clustering</li>
+                            <li>Prefetching (read-ahead)</li>
+                            <li>Asynchronous operations</li>
+                        </ul>
+                    </li>
+                    <li><strong>Modern Trends:</strong>
+                        <ul>
+                            <li>NVM devices ต้องการ algorithms ใหม่</li>
+                            <li>Journaling เป็นมาตรฐาน</li>
+                            <li>File systems ซับซ้อนขึ้น (ZFS, APFS)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Reliability:</strong>
+                        <ul>
+                            <li>Journaling file systems</li>
+                            <li>TRIM สำหรับ NVM</li>
+                            <li>Backup และ recovery mechanisms</li>
+                        </ul>
+                    </li>
+                    <li><strong>Scalability:</strong>
+                        <ul>
+                            <li>64-bit pointers สำหรับไฟล์ใหญ่</li>
+                            <li>Combined scheme (UNIX inode) รองรับทั้งไฟล์เล็กและใหญ่</li>
+                            <li>ZFS ออกแบบสำหรับ massive scale</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <hr>
+
+                <p><strong>แหล่งข้อมูล:</strong></p>
+                <ul>
+                    <li>Operating System Concepts, Chapter 14: File-System Implementation <span class="page-ref">(หน้า 563-585)</span></li>
+                    <li>Operating System Concepts, Chapter 15: File-System Internals <span class="page-ref">(หน้า 597-601)</span></li>
+                    <li>Slides ประกอบการสอน (แก้ไขล่าสุด 5 พฤศจิกายน 2568)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
