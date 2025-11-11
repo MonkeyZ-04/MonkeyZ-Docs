@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สรุป I/O Systems (Chapter 12)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .course-code {
+            font-size: 1.2rem;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .toc {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 40px;
+            border-left: 5px solid #667eea;
+        }
+
+        .toc h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .toc li {
+            padding: 8px 15px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .toc li:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(10px);
+        }
+
+        .chapter {
+            margin-bottom: 50px;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h2 {
+            color: #764ba2;
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            margin: 30px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            position: relative;
+        }
+
+        h3 {
+            color: #667eea;
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            margin: 25px 0 15px;
+            padding-left: 15px;
+            border-left: 4px solid #764ba2;
+        }
+
+        h4 {
+            color: #555;
+            font-size: 1.2rem;
+            margin: 20px 0 10px;
+            font-weight: 600;
+        }
+
+        .page-ref {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 2px 8px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            color: #d73a49;
+        }
+
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 15px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+            font-size: 0.9rem;
+        }
+
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border-radius: 10px;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        tr:hover {
+            background: #e3f2fd;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .example-box {
+            background: #151516;
+            border-left: 4px solid #2196f3;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .example-box h4 {
+            color: #2196f3;
+            margin-top: 0;
+        }
+
+        .summary-box {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 30px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .summary-box h2 {
+            color: white;
+            border-bottom: 2px solid rgba(255,255,255,0.5);
+        }
+        
+        /* Custom styles for summary box content */
+        .summary-box h3 {
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            border-left: 4px solid white;
+            margin-top: 30px;
+        }
+        
+        .summary-box h4 {
+            color: #f8f8f8;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .summary-box ul, .summary-box ol {
+            color: #f8f8f8;
+        }
+
+        .summary-box p {
+            color: white;
+        }
+
+
+        hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+            margin: 30px 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            header {
+                padding: 30px 20px;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            h3 {
+                font-size: 1.2rem;
+            }
+
+            pre {
+                padding: 15px;
+                font-size: 0.85rem;
+            }
+
+            table {
+                font-size: 0.9rem;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+
+            .toc {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .content {
+                padding: 15px;
+            }
+
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .course-code {
+                font-size: 1rem;
+            }
+
+            pre {
+                padding: 10px;
+                font-size: 0.75rem;
+            }
+
+            table {
+                font-size: 0.8rem;
+            }
+
+            .page-ref {
+                display: block;
+                margin: 5px 0;
+            }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #434343 0%, #000000 100%);
+            }
+
+            .container {
+                background: #1e1e1e;
+                color: #e0e0e0;
+            }
+
+            h2, h3, h4 {
+                color: #9c88ff;
+            }
+            
+            h4 {
+                 color: #bbb;
+            }
+
+            .toc {
+                background: #2d2d2d;
+            }
+
+            .toc li {
+                background: #3d3d3d;
+            }
+
+            code {
+                background: #2d2d2d;
+                color: #ff6b6b;
+            }
+
+            table tr:nth-child(even) {
+                background: #2d2d2d;
+            }
+
+            td {
+                border-color: #444;
+            }
+            
+            .summary-box h2, .summary-box h3, .summary-box h4, .summary-box p, .summary-box ul, .summary-box ol {
+                color: #1e1e1e;
+            }
+            .summary-box h2 {
+                border-bottom: 2px solid rgba(0,0,0,0.3);
+            }
+            .summary-box h3 {
+                border-left: 4px solid #1e1e1e;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 I/O Systems (Chapter 12)</h1>
+            <div class="course-code">บทสรุปเชิงลึก</div>
+        </header>
+
+        <div class="content">
+            <div class="toc">
+                <h2>📋 สารบัญ</h2>
+                <ul>
+                    <li>🔹 ภาพรวม (Overview)</li>
+                    <li>🔹 I/O Hardware</li>
+                    <li>🔹 Application I/O Interface</li>
+                    <li>🔹 Kernel I/O Subsystem</li>
+                    <li>🔹 Transforming I/O Requests to Hardware Operations</li>
+                    <li>🔹 สรุปประเด็นสำคัญ</li>
+                </ul>
+            </div>
+
+            <div class="chapter">
+                <h2>ภาพรวม (Overview) <span class="page-ref">หน้า 1, 489-490</span></h2>
+                <p>I/O Systems เป็นบทที่ 12 ซึ่งกล่าวถึงระบบ Input/Output ที่เป็นส่วนสำคัญของระบบปฏิบัติการ โดยเนื้อหาครอบคลุมตั้งแต่ hardware, software interface, จนถึงการจัดการประสิทธิภาพของ I/O</p>
+                
+                <h3>วัตถุประสงค์หลัก <span class="page-ref">หน้า 489</span></h3>
+                <ul>
+                    <li>สำรวจโครงสร้างของ I/O subsystem ในระบบปฏิบัติการ <span class="page-ref">หน้า 489</span></li>
+                    <li>อธิบายหลักการและความซับซ้อนของ I/O hardware <span class="page-ref">หน้า 489</span></li>
+                    <li>วิเคราะห์ประสิทธิภาพของ I/O ทั้ง hardware และ software <span class="page-ref">หน้า 489</span></li>
+                </ul>
+
+                <h3>12.1 Overview <span class="page-ref">หน้า 489-490</span></h3>
+                <p>งานหลักสองอย่างของคอมพิวเตอร์คือ I/O และการคำนวณ ในหลายกรณี งานหลักคือ I/O และการคำนวณเป็นเพียงเรื่องรอง เช่น เมื่อเราเรียกดูเว็บเพจหรือแก้ไขไฟล์ สิ่งที่เราสนใจคือการอ่านหรือป้อนข้อมูล ไม่ใช่การคำนวณ</p>
+                <p>บทบาทของระบบปฏิบัติการในการจัดการ I/O คือการควบคุมและจัดการ I/O operations และ I/O devices โดยระบบปฏิบัติการจะให้บริการ I/O และสร้าง application I/O interface จากนั้นจะเชื่อมช่องว่างระหว่าง hardware interface และ application interface</p>
+                <p>เทคโนโลยี I/O มีแนวโน้มที่ขัดแย้งกัน คือการมาตรฐานที่เพิ่มขึ้นในด้าน software และ hardware interfaces แต่ในขณะเดียวกันก็มี I/O devices ที่หลากหลายมากขึ้น ซึ่งต้องใช้เทคนิคทั้ง hardware และ software ร่วมกันในการรองรับ</p>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>12.2 I/O Hardware <span class="page-ref">หน้า 490-500</span></h2>
+
+                <h3>12.2.1 Port, Bus, และ Controller <span class="page-ref">หน้า 1-2 ของ Slide, หน้า 490-492</span></h3>
+                <h4>Port <span class="page-ref">หน้า 2 ของ Slide</span></h4>
+                <p>Device สื่อสารกับเครื่องผ่าน connection point หรือ port เช่น serial port ซึ่งมีหลาย pin สำหรับส่งและรับข้อมูล เช่น RS232 ที่มี 9 pins <span class="page-ref">หน้า 2 ของ Slide</span></p>
+                
+                <h4>ตัวอย่าง Port ต่างๆ <span class="page-ref">หน้า 3-5 ของ Slide</span></h4>
+                <ul>
+                    <li>HDMI Port สำหรับสัญญาณภาพและเสียง</li>
+                    <li>RJ45 สำหรับสาย LAN</li>
+                    <li>RJ11 สำหรับสายโทรศัพท์</li>
+                    <li>USB มีหลายแบบ: Type-A, Type-B, Mini-B, Micro-B, Type-C <span class="page-ref">หน้า 4 ของ Slide</span></li>
+                    <li>Thunderbolt 3 และ 4 (40 Gbps) ซึ่ง port เหมือน USB-C ทำงานร่วมกับ USB-C device ได้ แต่เอา Thunderbolt device ไปต่อกับ USB-C port ไม่ได้ <span class="page-ref">หน้า 5 ของ Slide</span></li>
+                </ul>
+
+                <h4>Bus <span class="page-ref">หน้า 6-7 ของ Slide, หน้า 490-491</span></h4>
+                <p>Bus คือชุดของสายไฟและโปรโตคอลที่กำหนดไว้อย่างเคร่งครัด ซึ่งระบุชุดของข้อความที่สามารถส่งบนสายไฟได้ เช่น PCI bus ที่ใช้ในคอมพิวเตอร์ส่วนใหญ่ปัจจุบัน</p>
+                <p>PCIe (PCI Express) เป็น bus ที่ยืดหยุ่น ส่งข้อมูลผ่าน "lanes" หนึ่ง lane ประกอบด้วย signaling pairs สองคู่ หนึ่งคู่สำหรับรับข้อมูลและอีกคู่สำหรับส่งข้อมูล แต่ละ lane จึงประกอบด้วยสายไฟสี่เส้น PCIe links อาจมี 1, 2, 4, 8, 12, 16 หรือ 32 lanes</p>
+                <ul>
+                    <li>PCIe x16 ใช้สำหรับ Graphic card</li>
+                    <li>Expansion bus สำหรับอุปกรณ์ที่ทำงานไม่เร็วมาก เช่น keyboard, mouse, USB devices <span class="page-ref">หน้า 6 ของ Slide</span></li>
+                </ul>
+
+                <h4>Controller <span class="page-ref">หน้า 9 ของ Slide, หน้า 491</span></h4>
+                <p>Controller คือชุดของอิเล็กทรอนิกส์ที่สามารถควบคุม port, bus หรือ device ได้ Serial-port controller เป็น device controller แบบง่าย ส่วน FC (Fibre Channel) bus controller ซับซ้อนกว่า มักถูกนำมาใช้เป็น host bus adapter (HBA) ที่เชื่อมต่อกับ bus ในคอมพิวเตอร์</p>
+
+                <h4>ความเร็วของ Interface ต่างๆ <span class="page-ref">หน้า 13 ของ Slide, หน้า 509-510</span></h4>
+                <ul>
+                    <li>USB 3.0: ประมาณ 0.625 GB/s</li>
+                    <li>SAS: ประมาณ 2.8 GB/s</li>
+                    <li>Thunderbolt: 5 GB/s</li>
+                    <li>PCIe Express Gen 4 x16: 16 GB/s</li>
+                    <li>เลือกใช้ให้เหมาะสมกับปริมาณข้อมูล เช่น USB 3.0 copy ไฟล์ 10TB ใช้เวลา 4 ชั่วโมงครึ่ง <span class="page-ref">หน้า 13 ของ Slide</span></li>
+                </ul>
+
+                <h3>12.2.2 Memory-Mapped I/O <span class="page-ref">หน้า 491-493</span></h3>
+                <p>Processor สื่อสารกับ controller โดยอ่านและเขียน bit patterns ใน registers ของ controller วิธีหนึ่งคือการใช้ I/O instructions พิเศษ อีกวิธีคือใช้ memory-mapped I/O ซึ่ง device-control registers ถูก map เข้าไปใน address space ของ processor</p>
+                <p>ในอดีต PC มักใช้ I/O instructions สำหรับควบคุมบางอุปกรณ์และ memory-mapped I/O สำหรับควบคุมอุปกรณ์อื่น เช่น graphics controller มี I/O ports สำหรับการควบคุมพื้นฐาน แต่มี memory-mapped region ขนาดใหญ่เพื่อเก็บเนื้อหาหน้าจอ</p>
+
+                <h4>I/O Device Control Registers <span class="page-ref">หน้า 492-493</span></h4>
+                <p>การควบคุม I/O device มักประกอบด้วย registers สี่ตัว: status register, control register, data-in register และ data-out register</p>
+                <ul>
+                    <li><strong>Data-in register:</strong> อ่านโดย host เพื่อรับ input</li>
+                    <li><strong>Data-out register:</strong> เขียนโดย host เพื่อส่ง output</li>
+                    <li><strong>Status register:</strong> บอกสถานะ เช่น command เสร็จหรือยัง, มีข้อมูลใน data-in register หรือไม่, มี error หรือไม่</li>
+                    <li><strong>Control register:</strong> เขียนโดย host เพื่อเริ่ม command หรือเปลี่ยน mode ของ device</li>
+                </ul>
+
+                <h3>12.2.3 Polling <span class="page-ref">หน้า 493-494</span></h3>
+                <p>Handshaking protocol ระหว่าง host และ controller ใช้ 2 bits: busy bit ใน status register (controller ตั้งค่าเมื่อกำลังทำงาน) และ command-ready bit ใน command register (host ตั้งค่าเมื่อมี command พร้อม)</p>
+                
+                <h4>ตัวอย่าง Handshaking สำหรับ Output <span class="page-ref">หน้า 493</span></h4>
+                <ol>
+                    <li>Host อ่าน busy bit ซ้ำๆ จนกว่า bit จะเป็น clear</li>
+                    <li>Host ตั้ง write bit ใน command register และเขียน byte ลงใน data-out register</li>
+                    <li>Host ตั้ง command-ready bit</li>
+                    <li>เมื่อ controller เห็น command-ready bit ถูกตั้ง มันจะตั้ง busy bit</li>
+                    <li>Controller อ่าน command register เห็น write command จากนั้นอ่าน data-out register และทำ I/O ไปยัง device</li>
+                    <li>Controller ล้าง command-ready bit, error bit และ busy bit เมื่อเสร็จ</li>
+                </ol>
+                <p>ใน step 1 host กำลัง busy-waiting หรือ polling คือวนอ่าน status register ซ้ำๆ จนกว่า busy bit จะ clear วิธีนี้มีประสิทธิภาพถ้า controller และ device เร็ว แต่ถ้ารอนาน host ควรสลับไปทำ task อื่น</p>
+
+                <h3>12.2.4 Interrupts <span class="page-ref">หน้า 15 ของ Slide, หน้า 494-498</span></h3>
+                <h4>การทำงานแบบ Synchronous/Asynchronous <span class="page-ref">หน้า 15 ของ Slide</span></h4>
+                <ul>
+                    <li><strong>Blocking (Synchronous):</strong> รอให้ HW ทำงานเสร็จ ถ้า HW ทำงานเสร็จ ให้ interrupt เพื่อบอกว่าเสร็จแล้ว</li>
+                    <li><strong>Non-blocking (Asynchronous):</strong> ไม่รอ ทำคำสั่งต่อไปเลย</li>
+                </ul>
+                <p>Hardware mechanism ที่ช่วยให้ device แจ้ง CPU เมื่อพร้อมให้บริการเรียกว่า interrupt CPU มี interrupt-request line ที่ CPU ตรวจสอบหลังจากทำคำสั่งแต่ละตัว เมื่อ CPU ตรวจพบว่า controller ส่ง signal บน interrupt-request line CPU จะทำ state save และกระโดดไปที่ interrupt-handler routine</p>
+
+                <h4>Interrupt Vector และ Interrupt Chaining <span class="page-ref">หน้า 495-496</span></h4>
+                <p>Interrupt mechanism รับ address ที่เลือก interrupt-handling routine จากชุดเล็กๆ ใน architecture ส่วนใหญ่ address นี้เป็น offset ใน interrupt vector table ซึ่งมี memory addresses ของ specialized interrupt handlers</p>
+                <p>ในทางปฏิบัติ คอมพิวเตอร์มี devices (และ interrupt handlers) มากกว่า address elements ใน interrupt vector วิธีแก้ปัญหาคือใช้ interrupt chaining โดยแต่ละ element ใน interrupt vector ชี้ไปที่ head ของ list ของ interrupt handlers</p>
+
+                <h4>Interrupt Priority Levels <span class="page-ref">หน้า 497</span></h4>
+                <p>Interrupt mechanism ยังมีระบบ interrupt priority levels ซึ่งช่วยให้ CPU สามารถเลื่อนการจัดการ low-priority interrupts โดยไม่ปิดกั้น interrupts ทั้งหมด และทำให้ high-priority interrupt สามารถ preempt การทำงานของ low-priority interrupt ได้</p>
+
+                <h3>12.2.5 Direct Memory Access (DMA) <span class="page-ref">หน้า 498-500</span></h3>
+                <p>สำหรับ device ที่ทำ transfer ขนาดใหญ่ เช่น disk drive การใช้ processor เพื่อดู status bits และป้อนข้อมูลทีละ byte เข้าไปใน controller register (programmed I/O หรือ PIO) เป็นการสิ้นเปลือง คอมพิวเตอร์จึงใช้ direct-memory-access (DMA) controller เพื่อถ่ายโอนงานบางส่วน</p>
+
+                <h4>การทำงานของ DMA <span class="page-ref">หน้า 498-499</span></h4>
+                <p>เพื่อเริ่ม DMA transfer host เขียน DMA command block ลงใน memory block นี้มี pointer ไปยัง source ของ transfer, pointer ไปยัง destination และจำนวน bytes ที่จะ transfer CPU เขียน address ของ command block นี้ไปยัง DMA controller แล้วทำงานอื่นต่อ DMA controller จะควบคุม memory bus โดยตรง</p>
+                <p>Handshaking ระหว่าง DMA controller และ device controller ทำผ่าน wires คู่หนึ่งชื่อ DMA-request และ DMA-acknowledge Device controller ส่ง signal บน DMA-request wire เมื่อมีข้อมูลพร้อม transfer สิ่งนี้ทำให้ DMA controller ยึด memory bus และส่ง signal บน DMA-acknowledge wire</p>
+                <p>เมื่อ transfer เสร็จทั้งหมด DMA controller ทำ interrupt CPU แม้ว่า DMA controller จะยึด memory bus ซึ่งทำให้ CPU ไม่สามารถเข้าถึง main memory ได้ชั่วคราว (cycle stealing) แต่การถ่ายโอนงาน data-transfer ให้ DMA controller โดยทั่วไปจะช่วยเพิ่มประสิทธิภาพของระบบโดยรวม</p>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>12.3 Application I/O Interface <span class="page-ref">หน้า 500-508</span></h2>
+                <p>ระบบปฏิบัติการจัดการความแตกต่างของ I/O devices โดยระบุ general kinds ไม่กี่แบบ แต่ละ kind เข้าถึงผ่าน standardized set of functions (interface) ความแตกต่างถูกห่อหุ้มใน kernel modules ที่เรียกว่า device drivers ซึ่งถูกปรับแต่งสำหรับ specific devices แต่ export standard interfaces</p>
+
+                <h3>12.3.1 Block และ Character Devices <span class="page-ref">หน้า 503-504</span></h3>
+                <p>Block-device interface จับทุกแง่มุมที่จำเป็นสำหรับเข้าถึง disk drives และ block-oriented devices อื่นๆ device คาดว่าจะเข้าใจ commands เช่น read() และ write() ถ้าเป็น random-access device ก็ควรมี seek() command เพื่อระบุว่าจะ transfer block ไหนต่อไป</p>
+                <p>บางแอปพลิเคชันต้องการเข้าถึง block device เป็น linear array of blocks แบบง่ายๆ mode การเข้าถึงนี้เรียกว่า raw I/O เพื่อหลีกเลี่ยง buffering และ locking ที่ไม่จำเป็น การประนีประนอมที่กลายเป็นเรื่องธรรมดาคือระบบปฏิบัติการอนุญาตให้มี mode ของ operation บน file ที่ปิด buffering และ locking ใน UNIX เรียกว่า direct I/O</p>
+                <p>Keyboard เป็นตัวอย่างของ device ที่เข้าถึงผ่าน character-stream interface System calls พื้นฐานใน interface นี้ช่วยให้แอปพลิเคชัน get() หรือ put() one character ได้</p>
+
+                <h3>12.3.2 Network Devices <span class="page-ref">หน้า 504-505</span></h3>
+                <p>เนื่องจาก performance และ addressing characteristics ของ network I/O แตกต่างอย่างมากจาก disk I/O ระบบปฏิบัติการส่วนใหญ่จึงให้ network I/O interface ที่แตกต่างจาก read()-write()-seek() interface ที่ใช้กับ disks หนึ่ง interface ที่มีใน UNIX และ Windows คือ network socket interface</p>
+                <p>System calls ใน socket interface ช่วยให้แอปพลิเคชันสามารถ create socket, connect local socket ไปยัง remote address, listen สำหรับ remote application เพื่อ plug into local socket และ send และ receive packets ผ่าน connection นอกจากนี้ socket interface ยังมี select() function ที่จัดการชุดของ sockets</p>
+
+                <h3>12.3.3 Clocks และ Timers <span class="page-ref">หน้า 505-506</span></h3>
+                <p>คอมพิวเตอร์ส่วนใหญ่มี hardware clocks และ timers ที่ให้ฟังก์ชันพื้นฐานสามอย่าง: ให้เวลาปัจจุบัน, ให้เวลาที่ผ่านไป, ตั้ง timer เพื่อ trigger operation X ที่เวลา T</p>
+                <p>Hardware ที่วัดเวลาที่ผ่านไปและ trigger operations เรียกว่า programmable interval timer สามารถตั้งให้รอระยะเวลาหนึ่งแล้ว generate interrupt และสามารถตั้งให้ทำครั้งเดียวหรือทำซ้ำเพื่อ generate periodic interrupts</p>
+                <p>คอมพิวเตอร์สมัยใหม่มี high-performance event timer (HPET) ที่ทำงานที่อัตรา 10-megahertz range มี comparators หลายตัวที่สามารถตั้งให้ trigger ครั้งเดียวหรือซ้ำๆ เมื่อค่าที่พวกมันเก็บตรงกับค่าของ HPET</p>
+
+                <h3>12.3.4 Nonblocking และ Asynchronous I/O <span class="page-ref">หน้า 16-19 ของ Slide, หน้า 506-507</span></h3>
+                <h4>Blocking I/O <span class="page-ref">หน้า 506</span></h4>
+                <p>เมื่อแอปพลิเคชันออก blocking system call การทำงานของ calling thread ถูกระงับ thread ถูกย้ายจาก run queue ไปยัง wait queue หลังจาก system call เสร็จ thread ถูกย้ายกลับไปที่ run queue</p>
+                
+                <h4>Nonblocking I/O <span class="page-ref">หน้า 506</span></h4>
+                <p>Nonblocking call ไม่หยุดการทำงานของ thread เป็นเวลานาน แต่ return ทันทีโดยมี return value ที่บอกว่ามีการ transfer กี่ bytes</p>
+
+                <h4>Asynchronous I/O <span class="page-ref">หน้า 506</span></h4>
+                <p>Asynchronous call return ทันทีโดยไม่รอให้ I/O เสร็จ thread ดำเนินการ code ของมันต่อ การเสร็จสิ้นของ I/O ในอนาคตจะถูกสื่อสารไปยัง thread ผ่านการตั้งค่า variable, triggering signal/software interrupt หรือ call-back routine</p>
+
+                <h4>ตัวอย่างใน C# และ JavaScript <span class="page-ref">หน้า 16-19 ของ Slide</span></h4>
+                <p>หน้า 16 แสดงตัวอย่าง C# ที่ใช้ WriteLineAsync() ซึ่งถ้า Close() ก่อนที่ WriteLineAsync() จะทำงานเสร็จจะเกิด error ต้องใช้ promise, async/await</p>
+                <p>หน้า 17-19 แสดงตัวอย่าง JavaScript ที่ใช้ Promise, then, catch และ C# ที่แบ่งงานเป็น task ย่อยหลายๆ task โดย OS จะพิจารณาสร้าง threads จาก #cores และ workload</p>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>12.4 Kernel I/O Subsystem <span class="page-ref">หน้า 508-516</span></h2>
+                <p>Kernels ให้บริการหลายอย่างที่เกี่ยวข้องกับ I/O บริการหลายอย่าง เช่น scheduling, buffering, caching, spooling, device reservation และ error handling ถูกจัดให้โดย kernel's I/O subsystem</p>
+
+                <h3>12.4.1 I/O Scheduling <span class="page-ref">หน้า 508-509</span></h3>
+                <p>การ schedule ชุดของ I/O requests หมายถึงการกำหนด order ที่ดีในการทำงาน การ scheduling สามารถปรับปรุง overall system performance, แบ่งปัน device access อย่างเป็นธรรม และลด average waiting time ให้ I/O เสร็จ</p>
+                <p>ระบบปฏิบัติการจัดการ scheduling โดยรักษา wait queue ของ requests สำหรับแต่ละ device เมื่อแอปพลิเคชันออก blocking I/O system call request ถูกวางใน queue สำหรับ device นั้น I/O scheduler จัดเรียง order ของ queue ใหม่เพื่อปรับปรุง system efficiency</p>
+
+                <h3>12.4.2 Buffering <span class="page-ref">หน้า 509-510</span></h3>
+                <p>Buffer คือ memory area ที่เก็บข้อมูลที่กำลังถูก transfer ระหว่าง two devices หรือระหว่าง device และ application การ buffering ทำเพื่อสามเหตุผล</p>
+                
+                <h4>เหตุผลในการใช้ Buffering:</h4>
+                <ul>
+                    <li><strong>Speed mismatch:</strong> รับมือกับความแตกต่างของความเร็วระหว่าง producer และ consumer เช่น network speed อาจช้ากว่า drive หลายพันเท่า ใช้ double buffering เพื่อ decouple producer จาก consumer <span class="page-ref">หน้า 509</span></li>
+                    <li><strong>Data-transfer size adaptation:</strong> จัดการกับ devices ที่มี data-transfer sizes ต่างกัน มักใช้ใน computer networking สำหรับ fragmentation และ reassembly ของ messages <span class="page-ref">หน้า 509-510</span></li>
+                    <li><strong>Copy semantics:</strong> รับประกัน copy semantics สำหรับ application I/O เพื่อให้ version ของข้อมูลที่เขียนลง disk เป็น version ณ เวลาที่เรียก system call โดยไม่ขึ้นกับการเปลี่ยนแปลงใดๆ ใน application's buffer ภายหลัง <span class="page-ref">หน้า 510</span></li>
+                </ul>
+
+                <h3>12.4.3 Caching <span class="page-ref">หน้า 510-511</span></h3>
+                <p>Cache คือ region ของ fast memory ที่เก็บ copies ของข้อมูล การเข้าถึง cached copy มีประสิทธิภาพมากกว่าการเข้าถึง original ความแตกต่างระหว่าง buffer และ cache คือ buffer อาจเก็บ copy เดียวที่มีอยู่ของ data item ในขณะที่ cache ตามนิยามเก็บ copy บน faster storage ของ item ที่อยู่ที่อื่น</p>
+                <p>Caching และ buffering เป็นฟังก์ชันที่แตกต่างกัน แต่บางครั้ง region ของ memory สามารถใช้สำหรับทั้งสองวัตถุประสงค์ เช่น ระบบปฏิบัติการใช้ buffers ใน main memory เพื่อเก็บ disk data Buffers เหล่านี้ยังใช้เป็น cache เพื่อปรับปรุง I/O efficiency สำหรับ files ที่ shared โดย applications</p>
+
+                <h3>12.4.4 Spooling และ Device Reservation <span class="page-ref">หน้า 511</span></h3>
+                <p>Spool คือ buffer ที่เก็บ output สำหรับ device เช่น printer ที่ไม่สามารถรับ interleaved data streams ได้ แม้ว่า printer จะให้บริการได้ทีละ job เดียว แต่หลายแอปพลิเคชันอาจต้องการ print output พร้อมกัน ระบบปฏิบัติการแก้ปัญหานี้โดยดัก output ทั้งหมดไปยัง printer</p>
+                <p>บาง devices เช่น tape drives และ printers ไม่สามารถ multiplex I/O requests ของหลาย applications พร้อมกันได้อย่างมีประโยชน์ Spooling เป็นวิธีหนึ่งที่ระบบปฏิบัติการสามารถประสานการเข้าถึง device พร้อมกัน อีกวิธีคือให้ facilities ชัดเจนสำหรับการประสานงาน</p>
+
+                <h3>12.4.5 Error Handling <span class="page-ref">หน้า 511-512</span></h3>
+                <p>ระบบปฏิบัติการที่ใช้ protected memory สามารถป้องกัน hardware และ application errors หลายชนิด เพื่อไม่ให้เกิด complete system failure จากแต่ละ minor mechanical malfunction Devices และ I/O transfers สามารถ fail ได้หลายวิธี ไม่ว่าจะเป็น transient reasons เช่น network overload หรือ permanent reasons เช่น disk controller เสีย</p>
+                <p>โดยทั่วไป I/O system call จะ return one bit ของข้อมูลเกี่ยวกับสถานะของ call บอกว่า success หรือ failure ใน UNIX ตัวแปร integer ชื่อ errno ถูกใช้เพื่อ return error code ที่บอกลักษณะทั่วไปของ failure</p>
+
+                <h3>12.4.6 I/O Protection <span class="page-ref">หน้า 512</span></h3>
+                <p>เพื่อป้องกันไม่ให้ users ทำ illegal I/O เรากำหนดให้ I/O instructions ทั้งหมดเป็น privileged instructions ดังนั้น users ไม่สามารถออก I/O instructions โดยตรง ต้องทำผ่าน operating system โดยการ execute system call</p>
+
+                <h3>12.4.7 Kernel Data Structures <span class="page-ref">หน้า 512-514</span></h3>
+                <p>Kernel ต้องเก็บ state information เกี่ยวกับการใช้ I/O components ทำผ่าน in-kernel data structures ต่างๆ เช่น open-file table structure</p>
+                <p>UNIX ให้การเข้าถึง file-system กับ entities ต่างๆ เช่น user files, raw devices และ address spaces ของ processes แม้ว่าแต่ละ entity จะรองรับ read() operation แต่ semantics แตกต่างกัน UNIX ห่อหุ้มความแตกต่างเหล่านี้ใน uniform structure โดยใช้เทคนิค object-oriented Open-file record มี dispatch table ที่เก็บ pointers ไปยัง routines ที่เหมาะสม ขึ้นอยู่กับ type ของ file</p>
+
+                <h3>12.4.8 Power Management <span class="page-ref">หน้า 514-516</span></h3>
+                <p>คอมพิวเตอร์ที่อยู่ใน data centers ดูเหมือนห่างไกลจากปัญหาการใช้พลังงาน แต่เมื่อต้นทุนพลังงานเพิ่มขึ้นและโลกกังวลเกี่ยวกับผลกระทบระยะยาวของ greenhouse gas emissions data centers กลายเป็นสาเหตุของความกังวล การใช้ไฟฟ้าสร้างความร้อน และส่วนประกอบคอมพิวเตอร์อาจล้มเหลวเนื่องจากอุณหภูมิสูง</p>
+                <p>ระบบปฏิบัติการมีบทบาทในการใช้พลังงาน ใน cloud computing environments ภาระการประมวลผลสามารถปรับได้โดย monitoring และ management tools เพื่อ evacuate user processes ทั้งหมดจากระบบ ทำให้ระบบเหล่านั้น idle และปิดพลังงานจนกว่าภาระจะต้องการการใช้งาน</p>
+                
+                <h4>Power Management ใน Android <span class="page-ref">หน้า 515-516</span></h4>
+                <p>ใน mobile computing การจัดการพลังงานกลายเป็นคุณลักษณะสำคัญของระบบปฏิบัติการ Android มี features สามอย่างหลักเพื่อเพิ่มอายุแบตเตอรี่:</p>
+                <ul>
+                    <li><strong>Power collapse:</strong> ความสามารถในการทำให้ device เข้าสู่ deep sleep state โดย power off ส่วนประกอบหลายอย่างภายใน device และวาง CPU ใน lowest sleep state <span class="page-ref">หน้า 515</span></li>
+                    <li><strong>Component-level power management:</strong> Infrastructure ที่เข้าใจความสัมพันธ์ระหว่างส่วนประกอบและว่าแต่ละส่วนประกอบใช้งานอยู่หรือไม่ Android สร้าง device tree ที่แสดง phone's physical-device topology <span class="page-ref">หน้า 515</span></li>
+                    <li><strong>Wakelocks:</strong> ช่วยให้แอปพลิเคชันป้องกันระบบไม่ให้เข้าสู่ power collapse ชั่วคราว เช่น ขณะเล่นเกม ดูวิดีโอ หรือรอหน้าเว็บโหลด <span class="page-ref">หน้า 515-516</span></li>
+                </ul>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>12.5 Transforming I/O Requests to Hardware Operations <span class="page-ref">หน้า 20 ของ Slide, หน้า 516-519</span></h2>
+                <p>ระบบปฏิบัติการเชื่อมต่อ application request กับ network wires หรือ disk sector อย่างไร ให้พิจารณาการอ่านไฟล์จาก disk แอปพลิเคชันอ้างถึงข้อมูลด้วย file name ภายใน disk file system map จาก file name ผ่าน file-system directories เพื่อได้ space allocation ของ file</p>
+                
+                <h4>ตัวอย่างการ Map ใน MS-DOS และ UNIX <span class="page-ref">หน้า 517</span></h4>
+                <ul>
+                    <li><strong>MS-DOS for FAT:</strong> ส่วนแรกของชื่อไฟล์ก่อน colon เป็น string ที่ระบุ specific hardware device เช่น <code>C:</code> คือ primary hard disk ซึ่ง map ไปยัง specific port address ผ่าน device table <span class="page-ref">หน้า 517</span></li>
+                    <li><strong>UNIX:</strong> ไม่มีกรแยกชื่อ device ออกจาก file-system name space แทนที่จะใช้ mount table ที่เชื่อม prefixes ของ path names กับ specific device names เมื่อ lookup path name UNIX ค้นหาใน mount table เพื่อหา longest matching prefix และได้ device name ที่สอดคล้อง <span class="page-ref">หน้า 517</span></li>
+                </ul>
+
+                <h4>Life Cycle ของ Blocking Read Request <span class="page-ref">หน้า 518-519</span></h4>
+                <p>Life cycle ของ blocking read request มีหลายขั้นตอน Process ออก blocking read() system call → System-call code ใน kernel ตรวจสอบ parameters ถ้าข้อมูลอยู่ใน buffer cache แล้วก็ return ไปยัง process → ถ้าไม่มี ต้องทำ physical I/O process ถูกย้ายจาก run queue ไปยัง wait queue → I/O subsystem ส่ง request ไปยัง device driver → Device driver allocate kernel buffer space และ schedule I/O → Device controller ทำ data transfer → เมื่อเสร็จ DMA controller generate interrupt → Interrupt handler รับ interrupt และ signal device driver → Device driver signal kernel I/O subsystem → Kernel transfer data หรือ return codes ไปยัง address space ของ requesting process และย้าย process กลับไปที่ ready queue</p>
+            </div>
+
+            <div class="summary-box">
+                <h2>🎯 สรุปประเด็นสำคัญ</h2>
+
+                <h3>Hardware Components</h3>
+                <ul>
+                    <li>Port, Bus (PCIe, Expansion bus), Controller เป็นส่วนประกอบพื้นฐานของ I/O hardware <span class="page-ref">หน้า 1-9 ของ Slide, หน้า 490-492</span></li>
+                    <li>Memory-mapped I/O ช่วยให้ CPU เข้าถึง device control registers ผ่าน memory address space <span class="page-ref">หน้า 491-493</span></li>
+                    <li>DMA ช่วยลดภาระของ CPU ในการจัดการ data transfer <span class="page-ref">หน้า 498-500</span></li>
+                </ul>
+
+                <h3>I/O Methods</h3>
+                <ul>
+                    <li>Polling เหมาะสำหรับ device ที่เร็ว แต่สิ้นเปลือง CPU ถ้ารอนาน <span class="page-ref">หน้า 493-494</span></li>
+                    <li>Interrupt-driven I/O มีประสิทธิภาพดีกว่า polling สำหรับ device ส่วนใหญ่ <span class="page-ref">หน้า 15 ของ Slide, หน้า 494-498</span></li>
+                    <li>Blocking, Nonblocking และ Asynchronous I/O ให้ความยืดหยุ่นในการเขียนโปรแกรม <span class="page-ref">หน้า 15-19 ของ Slide, หน้า 506-507</span></li>
+                </ul>
+
+                <h3>Kernel Services</h3>
+                <ul>
+                    <li>I/O Scheduling, Buffering, Caching, Spooling ช่วยเพิ่มประสิทธิภาพระบบ <span class="page-ref">หน้า 508-511</span></li>
+                    <li>Error Handling และ I/O Protection ช่วยรักษาความเสถียรและความปลอดภัยของระบบ <span class="page-ref">หน้า 511-512</span></li>
+                    <li>Power Management เป็นสิ่งสำคัญโดยเฉพาะใน mobile devices <span class="page-ref">หน้า 514-516</span></li>
+                </ul>
+
+                <h3>Application Interface</h3>
+                <ul>
+                    <li>Device drivers ซ่อนความแตกต่างของ hardware จาก application <span class="page-ref">หน้า 500-501</span></li>
+                    <li>Standard interfaces เช่น block, character stream, network sockets ทำให้การเขียนโปรแกรมง่ายขึ้น <span class="page-ref">หน้า 503-505</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

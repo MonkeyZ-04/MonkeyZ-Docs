@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สรุป Chapter 5 - Image Restoration</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Sarabun', Arial, sans-serif; line-height: 1.9; color: #333; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+        header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 50px 40px; text-align: center; }
+        header h1 { font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 15px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .course-code { font-size: 1.3rem; opacity: 0.95; margin: 5px 0; }
+        .content { padding: 40px; }
+        .toc { background: #f8f9fa; border-radius: 15px; padding: 30px; margin-bottom: 50px; border-left: 6px solid #667eea; }
+        .toc h2 { color: #667eea; margin-bottom: 20px; font-size: 1.8rem; }
+        .toc ul { list-style: none; padding-left: 0; }
+        .toc li { padding: 12px 20px; margin: 8px 0; background: white; border-radius: 10px; transition: all 0.3s ease; cursor: pointer; font-size: 1.05rem; }
+        .toc li:hover { background: #667eea; color: white; transform: translateX(15px); box-shadow: 0 4px 12px rgba(102,126,234,0.3); }
+        .toc a { text-decoration: none; color: inherit; display: block; }
+        .chapter { margin-bottom: 80px; padding: 30px; background: #fafafa; border-radius: 15px; }
+        h2 { color: #764ba2; font-size: clamp(1.8rem, 4vw, 2.4rem); margin: 40px 0 25px; padding-bottom: 15px; border-bottom: 4px solid #667eea; }
+        h3 { color: #667eea; font-size: clamp(1.4rem, 3vw, 1.8rem); margin: 35px 0 20px; padding-left: 20px; border-left: 5px solid #764ba2; }
+        h4 { color: #555; font-size: 1.3rem; margin: 25px 0 15px; font-weight: 600; }
+        h5 { color: #666; font-size: 1.15rem; margin: 20px 0 10px; font-weight: 600; }
+        .page-ref { display: inline-block; background: #e3f2fd; color: #1976d2; padding: 3px 10px; border-radius: 15px; font-size: 0.9rem; font-weight: 600; margin-left: 8px; }
+        code { background: #f5f5f5; padding: 3px 8px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.95em; color: #d73a49; }
+        pre { background: #282c34; color: #abb2bf; padding: 25px; border-radius: 12px; overflow-x: auto; margin: 20px 0; box-shadow: 0 6px 12px rgba(0,0,0,0.15); line-height: 1.6; }
+        pre code { background: none; color: inherit; padding: 0; font-size: 0.95rem; }
+        ul, ol { margin: 20px 0; padding-left: 35px; }
+        li { margin: 12px 0; line-height: 1.8; }
+        .highlight-box { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 25px 30px; border-radius: 12px; margin: 25px 0; box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
+        .highlight-box h4 { color: white; margin-top: 0; }
+        .example-box { background: #f0f7ff; border-left: 5px solid #2196f3; padding: 25px 30px; margin: 25px 0; border-radius: 0 12px 12px 0; box-shadow: 0 2px 8px rgba(33,150,243,0.1); }
+        .example-box h4 { color: #1565c0; margin-top: 0; margin-bottom: 15px; }
+        .answer-box { background: #e8f5e9; border-left: 5px solid #4caf50; padding: 25px 30px; margin: 25px 0; border-radius: 0 12px 12px 0; box-shadow: 0 2px 8px rgba(76,175,80,0.1); }
+        .answer-box h4 { color: #2e7d32; margin-top: 0; margin-bottom: 15px; }
+        .proof-box { background: #fff3e0; border-left: 5px solid #ff9800; padding: 25px 30px; margin: 25px 0; border-radius: 0 12px 12px 0; box-shadow: 0 2px 8px rgba(255,152,0,0.1); }
+        .proof-box h4 { color: #e65100; margin-top: 0; margin-bottom: 15px; }
+        .summary-box { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: black; padding: 35px; border-radius: 15px; margin: 40px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .summary-box h2 { color: white; border-bottom: 3px solid rgba(255,255,255,0.5); padding-bottom: 15px; margin-bottom: 20px; }
+        .exercise-number { display: inline-block; background: #667eea; color: white; padding: 8px 20px; border-radius: 25px; font-weight: 700; margin-right: 15px; font-size: 1.1rem; }
+        hr { border: none; height: 3px; background: linear-gradient(to right, transparent, #667eea, transparent); margin: 60px 0; }
+        .note-box { background: #e1f5fe; border-left: 5px solid #0288d1; padding: 25px 30px; margin: 25px 0; border-radius: 0 12px 12px 0; box-shadow: 0 2px 8px rgba(2,136,209,0.1); }
+        .note-box h4 { color: #01579b; margin-top: 0; margin-bottom: 15px; }
+        .warning-box { background: #fff3e0; border-left: 5px solid #ff6f00; padding: 25px 30px; margin: 25px 0; border-radius: 0 12px 12px 0; box-shadow: 0 2px 8px rgba(255,111,0,0.1); }
+        .warning-box h4 { color: #e65100; margin-top: 0; margin-bottom: 15px; }
+        .definition-box { background: #f3e5f5; border-left: 5px solid #9c27b0; padding: 25px 30px; margin: 25px 0; border-radius: 0 12px 12px 0; box-shadow: 0 2px 8px rgba(156,39,176,0.1); }
+        .definition-box h4 { color: #6a1b9a; margin-top: 0; margin-bottom: 15px; }
+        .step-box { background: #e8eaf6; border-left: 5px solid #3f51b5; padding: 20px 25px; margin: 20px 0; border-radius: 0 10px 10px 0; }
+        .step-box h5 { color: #283593; margin-top: 0; margin-bottom: 12px; }
+        table { width: 100%; border-collapse: collapse; margin: 25px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden; }
+        th { background: #667eea; color: white; padding: 15px; text-align: left; font-weight: 600; font-size: 1.05rem; }
+        td { padding: 15px; border-bottom: 1px solid #e0e0e0; }
+        tr:nth-child(even) { background: #f8f9fa; }
+        tr:hover { background: #e3f2fd; }
+        .math-notation { font-family: 'Times New Roman', serif; font-style: italic; }
+        .conclusion { background: #c8e6c9; padding: 20px 25px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #4caf50; font-weight: 500; }
+        @media print { body { background: white; } .container { box-shadow: none; } }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .course-code {
+            font-size: 1.2rem;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .toc {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 40px;
+            border-left: 5px solid #667eea;
+        }
+
+        .toc h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .toc li {
+            padding: 8px 15px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .toc li:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(10px);
+        }
+
+        .chapter {
+            margin-bottom: 50px;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h2 {
+            color: #764ba2;
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            margin: 30px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            position: relative;
+        }
+
+        h3 {
+            color: #667eea;
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            margin: 25px 0 15px;
+            padding-left: 15px;
+            border-left: 4px solid #764ba2;
+        }
+
+        h4 {
+            color: #555;
+            font-size: 1.2rem;
+            margin: 20px 0 10px;
+            font-weight: 600;
+        }
+
+        .page-ref {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 2px 8px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            color: #d73a49;
+        }
+
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 15px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+            font-size: 0.9rem;
+        }
+
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border-radius: 10px;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        tr:hover {
+            background: #e3f2fd;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .example-box {
+            background: #151516;
+            border-left: 4px solid #2196f3;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .example-box h4 {
+            color: #2196f3;
+            margin-top: 0;
+        }
+
+        /* Dark mode requires modification of example-box colors */
+        .example-box {
+            background: #282c34; /* Match pre background */
+            border-left: 4px solid #2196f3;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+            color: #abb2bf; /* Match pre color */
+        }
+
+        .summary-box {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 30px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .summary-box h2 {
+            color: white;
+            border-bottom: 2px solid rgba(255,255,255,0.5);
+        }
+
+        hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+            margin: 30px 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            header {
+                padding: 30px 20px;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            h3 {
+                font-size: 1.2rem;
+            }
+
+            pre {
+                padding: 15px;
+                font-size: 0.85rem;
+            }
+
+            table {
+                font-size: 0.9rem;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+
+            .toc {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .content {
+                padding: 15px;
+            }
+
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .course-code {
+                font-size: 1rem;
+            }
+
+            pre {
+                padding: 10px;
+                font-size: 0.75rem;
+            }
+
+            table {
+                font-size: 0.8rem;
+            }
+
+            .page-ref {
+                display: block;
+                margin: 5px 0;
+            }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #434343 0%, #000000 100%);
+            }
+
+            .container {
+                background: #1e1e1e;
+                color: #e0e0e0;
+            }
+
+            h2, h3, h4 {
+                color: #9c88ff;
+            }
+            
+            h4 {
+                 color: #adbbff; /* Brighter h4 for dark mode */
+            }
+
+            .toc {
+                background: #2d2d2d;
+            }
+
+            .toc li {
+                background: #3d3d3d;
+            }
+
+            code {
+                background: #2d2d2d;
+                color: #ff6b6b;
+            }
+
+            table tr:nth-child(even) {
+                background: #2d2d2d;
+            }
+
+            td {
+                border-color: #444;
+            }
+
+            .example-box {
+                background: #282c34;
+                color: #abb2bf;
+            }
+            
+            .example-box h4 {
+                color: #2196f3;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Chapter 5 - Image Restoration</h1>
+            <div class="course-code">บทสรุปเชิงลึกจากไฟล์ Chapter05_Summary.md</div>
+        </header>
+
+        <div class="content">
+            <div class="toc">
+                <h2>📋 สารบัญ (โครงสร้างบท)</h2>
+                <ul>
+                    <li>🔹 ส่วนที่ 1: แบบจำลองของ Degradation</li>
+                    <li>🔹 ส่วนที่ 2: Noise - ประเภท คุณสมบัติ และแบบจำลอง</li>
+                    <li>🔹 ส่วนที่ 3: การประมาณค่าพารามิเตอร์ของ Noise</li>
+                    <li>🔹 ส่วนที่ 4: การกำจัด Noise (Spatial Domain)</li>
+                    <li>🔹 ส่วนที่ 5: การกำจัด Noise (Frequency Domain)</li>
+                    <li>🔹 ส่วนที่ 6: การประมาณค่า Degradation Function</li>
+                    <li>🔹 ส่วนที่ 7: การฟื้นฟูภาพจาก Degradation</li>
+                    <li>🔹 สรุปสาระสำคัญ</li>
+                </ul>
+            </div>
+
+            <div class="chapter">
+                <h2>ส่วนที่ 1: แนวคิดพื้นฐานและแบบจำลอง Degradation</h2>
+
+                <h3>1.1 ความหมายของ Image Restoration</h3>
+                <p><strong>Image Restoration</strong> หมายถึงกระบวนการกำจัดหรือลดความเสื่อมสภาพ (degradation) ที่เกิดขึ้นระหว่างการถ่ายภาพ <span class="page-ref">หน้า 3</span></p>
+                <p>ความเสื่อมสภาพที่พบบ่อยประกอบด้วย:</p>
+                <ul>
+                    <li>Noise (สัญญาณรบกวน)</li>
+                    <li>Out of focus blurring หรือภาพเบลอจากการเคลื่อนไหวของกล้อง (motion blur)</li>
+                </ul>
+
+                <h3>1.2 กระบวนการ Image Degradation และ Restoration</h3>
+                
+                <h4>1.2.1 แบบจำลองใน Spatial Domain <span class="page-ref">หน้า 4</span></h4>
+                <div class="example-box">
+                    <h4>Convolution Model</h4>
+                    <pre><code>g(x,y) = f(x,y) * h(x,y)</code></pre>
+                    <ul>
+                        <li>g(x,y) = ภาพที่เสื่อมสภาพ</li>
+                        <li>f(x,y) = ภาพต้นฉบับ</li>
+                        <li>h(x,y) = spatial representation ของ degradation</li>
+                    </ul>
+                </div>
+
+                <h4>1.2.2 การรวม Noise เข้าในแบบจำลอง <span class="page-ref">หน้า 5</span></h4>
+                <div class="example-box">
+                    <h4>Additive Noise Model</h4>
+                    <pre><code>g(x,y) = f(x,y) * h(x,y) + η(x,y)</code></pre>
+                    <ul>
+                        <li>η(x,y) = random errors ที่อาจเกิดขึ้น</li>
+                    </ul>
+                </div>
+
+                <h4>1.2.3 แบบจำลองใน Frequency Domain <span class="page-ref">หน้า 5</span></h4>
+                <div class="example-box">
+                    <h4>Frequency Domain Model</h4>
+                    <pre><code>G(u,v) = F(u,v)H(u,v) + N(u,v)</code></pre>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>ส่วนที่ 2: Noise - ประเภท คุณสมบัติ และแบบจำลอง</h2>
+                
+                <h3>2.1 ความหมายและแหล่งที่มาของ Noise <span class="page-ref">หน้า 8</span></h3>
+                <p><strong>Noise</strong> คือความเสื่อมสภาพใดๆ ในสัญญาณภาพที่เกิดจากการรบกวนภายนอก ข้อผิดพลาดเกิดขึ้นเมื่อ:</p>
+                <ul>
+                    <li>ภาพถูกแปลงเป็นดิจิทัล (digitized)</li>
+                    <li>ภาพถูกส่งทางอิเล็กทรอนิกส์จากที่หนึ่งไปยังอีกที่หนึ่ง</li>
+                </ul>
+                <h4>สาเหตุของ Noise:</h4>
+                <ul>
+                    <li>การใช้กล้อง CCD: ระดับแสงและอุณหภูมิของ sensor</li>
+                    <li>การส่งผ่านดาวเทียม การส่งแบบไร้สาย หรือสายเคเบิลเครือข่าย</li>
+                </ul>
+
+                <h3>2.2 คุณสมบัติของ Noise <span class="page-ref">หน้า 9</span></h3>
+                <h4>2.2.1 Spatial Properties</h4>
+                <ul>
+                    <li>พารามิเตอร์ที่กำหนดลักษณะเชิงพื้นที่ของ noise</li>
+                    <li>ว่า noise มีความสัมพันธ์ (correlated) กับภาพหรือไม่</li>
+                </ul>
+                <h4>2.2.2 Frequency Properties</h4>
+                <ul>
+                    <li>เนื้อหาความถี่ของ noise ใน Fourier sense</li>
+                    <li>หาก Fourier spectrum ของ noise มีค่าคงที่ noise นั้นเรียกว่า <strong>"White Noise"</strong></li>
+                </ul>
+
+                <h3>2.3 แบบจำลอง Noise และ Probability Density Functions (PDF) <span class="page-ref">หน้า 12</span></h3>
+                
+                <div class="example-box">
+                    <h4>Gaussian Noise <span class="page-ref">หน้า 13</span></h4>
+                    <pre><code>p(z) = (1/√(2πσ²)) exp[-(z-μ)²/2σ²]</code></pre>
+                    <p><strong>การใช้งาน</strong> <span class="page-ref">หน้า 28</span>: Electronic circuit noise, Sensor noise จากแสงไม่เพียงพอและ/หรืออุณหภูมิ</p>
+                </div>
+
+                <div class="example-box">
+                    <h4>Rayleigh Noise <span class="page-ref">หน้า 15</span></h4>
+                    <pre><code>p(z) = (2/b)(z-a)exp[-(z-a)²/b]  สำหรับ z≥a
+p(z) = 0                       สำหรับ z<a</code></pre>
+                    <p><strong>การใช้งาน</strong> <span class="page-ref">หน้า 28</span>: Range imaging, Ultra sound imaging</p>
+                </div>
+                
+                <div class="example-box">
+                    <h4>Erlang (Gamma) Noise <span class="page-ref">หน้า 18</span></h4>
+                    <pre><code>p(z) = [a^b z^(b-1)]/[(b-1)!] exp[-az]  สำหรับ z≥0
+p(z) = 0                              สำหรับ z<0</code></pre>
+                    <p><strong>การใช้งาน</strong> <span class="page-ref">หน้า 28</span>: Laser imaging</p>
+                </div>
+
+                <div class="example-box">
+                    <h4>Exponential Noise <span class="page-ref">หน้า 20</span></h4>
+                    <pre><code>p(z) = ae^(-az)  สำหรับ z≥0
+p(z) = 0       สำหรับ z<0</code></pre>
+                    <p><strong>ข้อสังเกต</strong>: เป็นกรณีพิเศษของ Erlang PDF เมื่อ b=1<br>
+                       <strong>การใช้งาน</strong> <span class="page-ref">หน้า 28</span>: Laser imaging</p>
+                </div>
+                
+                <div class="example-box">
+                    <h4>Uniform Noise <span class="page-ref">หน้า 22</span></h4>
+                    <pre><code>p(z) = 1/(b-a)  ถ้า a≤z≤b
+p(z) = 0      มิฉะนั้น</code></pre>
+                </div>
+                
+                <div class="example-box">
+                    <h4>Impulse (Salt-and-Pepper) Noise <span class="page-ref">หน้า 24-25</span></h4>
+                    <pre><code>p(z) = Pa  ถ้า z=a
+p(z) = Pb  ถ้า z=b
+p(z) = 0  มิฉะนั้น</code></pre>
+                    <p><strong>คุณสมบัติ</strong>: หากทั้งสองความน่าจะเป็นไม่เป็นศูนย์และใกล้เคียงกัน จะเรียกว่า <strong>salt-and-pepper noise</strong><br>
+                       <strong>การใช้งาน</strong> <span class="page-ref">หน้า 28</span>: Quick transients, Faulty switching</p>
+                </div>
+
+                <h3>2.4 การสังเกตและการแยก Noise Types <span class="page-ref">หน้า 29-34</span></h3>
+                <ul>
+                    <li>ภาพที่มี Gaussian, Rayleigh, Erlang, Exponential และ Uniform noise ยากต่อการแยกแยะด้วยสายตา แม้ว่า histogram จะแตกต่างกัน <span class="page-ref">หน้า 32</span></li>
+                    <li><strong>เฉพาะ Salt-and-pepper noise เท่านั้น</strong> ที่สามารถระบุประเภทของ noise ได้ด้วยสายตา</li>
+                </ul>
+
+                <h3>2.5 Periodic Noise <span class="page-ref">หน้า 39</span></h3>
+                <p>เกิดจากการรบกวนทางไฟฟ้าหรือระบบกลไฟฟ้าระหว่างการถ่ายภาพ สามารถลดได้อย่างมากผ่าน frequency domain filtering</p>
+            </div>
+            
+            <hr>
+
+            <div class="chapter">
+                <h2>ส่วนที่ 3: การประมาณค่าพารามิเตอร์ของ Noise</h2>
+
+                <h3>3.1 วิธีการประมาณจาก Fourier Spectrum <span class="page-ref">หน้า 43</span></h3>
+                <p>ทำการประมาณโดยการตรวจสอบ Fourier spectrum ของภาพ สามารถพยายามอนุมานความเป็นระยะของ noise components โดยตรงจากภาพ</p>
+
+                <h3>3.2 วิธีการประมาณจาก Image Patches <span class="page-ref">หน้า 44-47</span></h3>
+                <p>เมื่อมีเพียงภาพที่สร้างโดย sensors แล้ว สามารถประมาณพารามิเตอร์ของ PDF จาก patches เล็กๆ ของพื้นที่ gray level ที่ค่อนข้างคงที่</p>
+                
+                <div class="example-box">
+                    <h4>ขั้นตอนการประมาณ <span class="page-ref">หน้า 46</span></h4>
+                    <p>สำหรับ strip (subimage) S:</p>
+                    <pre><code>μ = Σ zi p(zi)
+σ² = Σ (zi - μ)² p(zi)</code></pre>
+                    <p><strong>การใช้ผลลัพธ์</strong> <span class="page-ref">หน้า 47</span>: หากรูปร่างเป็นแบบ Gaussian: mean และ variance คือทั้งหมดที่ต้องการ สำหรับรูปร่างอื่นๆ: ใช้ mean และ variance เพื่อแก้หาพารามิเตอร์ a และ b</p>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>ส่วนที่ 4: การกำจัด Noise ใน Spatial Domain</h2>
+                
+                <h3>4.1 แนวคิดพื้นฐาน <span class="page-ref">หน้า 48</span></h3>
+                <p>เมื่อความเสื่อมสภาพเพียงอย่างเดียวที่มีในภาพคือ noise:</p>
+                <pre><code>g(x,y) = f(x,y) + η(x,y)
+G(u,v) = F(u,v) + N(u,v)</code></pre>
+                <p>เนื่องจาก noise term ไม่ทราบค่า การลบออกจาก g(x,y) หรือ G(u,v) จึงไม่ใช่ตัวเลือกที่เป็นจริง (ยกเว้น periodic noise)</p>
+
+                <h3>4.2 Mean Filters</h3>
+                
+                <h4>4.2.1 Arithmetic Mean Filter <span class="page-ref">หน้า 50</span></h4>
+                <p>คำนวณค่าเฉลี่ยของภาพที่มี noise g(x,y) ในพื้นที่ Sxy</p>
+                <pre><code>f̂(x,y) = (1/mn) Σ g(s,t)</code></pre>
+                <p><strong>คุณสมบัติ</strong>: ทำให้การแปรผันในพื้นที่เรียบ Noise ลดลงเป็นผลจาก <strong>blurring</strong></p>
+
+                <h4>4.2.2 Geometric Mean Filter <span class="page-ref">หน้า 51</span></h4>
+                <pre><code>f̂(x,y) = [Π g(s,t)]^(1/mn)</code></pre>
+                <p><strong>ประสิทธิภาพ</strong> <span class="page-ref">หน้า 55</span>: ไม่ทำให้ภาพเบลอมากเท่า arithmetic filter</p>
+                
+                <h4>4.2.3 Harmonic Mean Filter <span class="page-ref">หน้า 52-53</span></h4>
+                <pre><code>f̂(x,y) = mn / Σ (1/g(s,t))</code></pre>
+                <p><strong>คุณสมบัติ</strong>: ทำงานได้ดีกับ <strong>salt noise</strong> แต่ล้มเหลวกับ <strong>pepper noise</strong> (เนื่องจาก intensity 0)</p>
+
+                <h4>4.2.4 Contraharmonic Mean Filter <span class="page-ref">หน้า 54</span></h4>
+                <pre><code>f̂(x,y) = Σ g(s,t)^(Q+1) / Σ g(s,t)^Q</code></pre>
+                <p><strong>คุณสมบัติ</strong>: เหมาะสำหรับการลด <strong>salt-and-pepper noise</strong></p>
+                <ul>
+                    <li><strong>Q เป็นบวก</strong>: กำจัด pepper noise</li>
+                    <li><strong>Q เป็นลบ</strong>: กำจัด salt noise</li>
+                    <li><strong>ไม่สามารถทำทั้งสองอย่างพร้อมกัน</strong></li>
+                </ul>
+
+                <h3>4.3 Order-Statistics Filters</h3>
+
+                <h4>4.3.1 Median Filter <span class="page-ref">หน้า 63-66</span></h4>
+                <pre><code>f̂(x,y) = median{g(s,t)}</code></pre>
+                <p><strong>คุณสมบัติ</strong>: แทนที่ค่าของพิกเซลด้วย median ของ gray levels <strong>มีประสิทธิภาพสูงสำหรับ bipolar และ unipolar impulse noise</strong></p>
+                
+                <h4>4.3.2 Max Filter <span class="page-ref">หน้า 69-70</span></h4>
+                <pre><code>f̂(x,y) = max{g(s,t)}</code></pre>
+                <p><strong>คุณสมบัติ</strong>: หาจุดที่สว่างที่สุด <strong>ลด pepper noise</strong> (noise ค่าต่ำ)</p>
+                
+                <h4>4.3.3 Min Filter <span class="page-ref">หน้า 71-72</span></h4>
+                <pre><code>f̂(x,y) = min{g(s,t)}</code></pre>
+                <p><strong>คุณสมบัติ</strong>: หาจุดที่มืดที่สุด <strong>ลด salt noise</strong> (noise ค่าสูง)</p>
+                
+                <h4>4.3.4 Midpoint Filter <span class="page-ref">หน้า 73</span></h4>
+                <pre><code>f̂(x,y) = (1/2)[max{g(s,t)} + min{g(s,t)}]</code></pre>
+                <p><strong>คุณสมบัติ</strong>: <strong>ทำงานได้ดีที่สุดกับ randomly distributed noise</strong> (Gaussian, uniform)</p>
+
+                <h4>4.3.5 Alpha-Trimmed Mean Filter <span class="page-ref">หน้า 74</span></h4>
+                <p><strong>หลักการ</strong>: ลบค่า gray-level ต่ำสุด d/2 และสูงสุด d/2</p>
+                <pre><code>f̂(x,y) = (1/(mn-d)) Σ gr(s,t)</code></pre>
+                <p><strong>คุณสมบัติ</strong>: <strong>มีประโยชน์ในสถานการณ์ที่มี noise หลายประเภท</strong></p>
+
+                <h3>4.4 Adaptive Filters</h3>
+                
+                <h4>4.4.1 Adaptive Filter (Wiener Filter) - Spatial Version <span class="page-ref">หน้า 80-85</span></h4>
+                <p><strong>แนวคิด</strong>: Filters ที่เปลี่ยนลักษณะตามค่า grayscales ภายใต้ mask <span class="page-ref">หน้า 80</span></p>
+                <p><strong>พฤติกรรมที่ต้องการ</strong> <span class="page-ref">หน้า 82</span>:</p>
+                <ol>
+                    <li>หาก <strong>σ²η = 0</strong> (ไม่มี noise): filter ควรคืนค่า g(x,y)</li>
+                    <li>หาก <strong>σ²L สูง</strong> (เจอขอบ): filter ควรคืนค่าใกล้เคียงกับ g(x,y) (รักษาขอบ)</li>
+                    <li>หาก <strong>σ²L ≈ σ²η</strong>: filter ควรคืนค่าเฉลี่ย (ลด noise)</li>
+                </ol>
+                <div class="example-box">
+                    <h4>สมการ Adaptive <span class="page-ref">หน้า 83</span></h4>
+                    <pre><code>f̂(x,y) = g(x,y) - (σ²η/σ²L)[g(x,y) - mL]</code></pre>
+                </div>
+                
+                <h4>4.4.2 Adaptive Median Filter <span class="page-ref">หน้า 86-91</span></h4>
+                <p><strong>ข้อดี</strong>: สามารถจัดการกับ impulse noise ที่มีความน่าจะเป็นมากกว่า (Pa, Pb > 0.2) และพยายาม<strong>รักษารายละเอียดในขณะที่ปรับให้เรียบ nonimpulse noise</strong></p>
+                
+                <div class="example-box">
+                    <h4>อัลกอริทึม <span class="page-ref">หน้า 88-89</span></h4>
+                    <p><strong>Level A:</strong></p>
+                    <ol>
+                        <li>A1 = Zmed - Zmin</li>
+                        <li>A2 = Zmed - Zmax</li>
+                        <li>ถ้า A1 > 0 AND A2 < 0 → ไปที่ Level B</li>
+                        <li>มิฉะนั้น เพิ่มขนาด window</li>
+                        <li>ถ้า window size ≤ Smax → ทำซ้ำ Level A</li>
+                        <li>มิฉะนั้น output Zxy</li>
+                    </ol>
+                    <p><strong>Level B:</strong></p>
+                    <ol>
+                        <li>B1 = Zxy - Zmin</li>
+                        <li>B2 = Zxy - Zmax</li>
+                        <li>ถ้า B1 > 0 AND B2 < 0 → output Zxy</li>
+                        <li>มิฉะนั้น output Zmed</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <hr>
+
+            <div class="chapter">
+                <h2>ส่วนที่ 5: การกำจัด Noise ใน Frequency Domain</h2>
+                <p>เหมาะสำหรับ <strong>Periodic Noise</strong></p>
+
+                <h3>5.1 Bandreject Filters <span class="page-ref">หน้า 93-98</span></h3>
+                <p><strong>คำจำกัดความ</strong>: กำจัดหรือทำให้อ่อนลงของ band ของความถี่รอบๆ origin</p>
+                
+                <div class="example-box">
+                    <h4>Butterworth Bandreject Filter <span class="page-ref">หน้า 94</span></h4>
+                    <pre><code>H(u,v) = 1 / [1 + [DW/(D²(u,v) - D₀²)]²ⁿ]</code></pre>
+                </div>
+                
+                <div class="example-box">
+                    <h4>Gaussian Bandreject Filter <span class="page-ref">หน้า 94</span></h4>
+                    <pre><code>H(u,v) = 1 - exp[-1/2 * (D²(u,v) - D₀²)/(DW)²]</code></pre>
+                </div>
+                <p><strong>การประยุกต์ใช้หลัก</strong> <span class="page-ref">หน้า 96-97</span>: ใช้เมื่อทราบตำแหน่งทั่วไปของ noise component(s) (เช่น sinusoidal noise)</p>
+
+                <h3>5.2 Bandpass Filters <span class="page-ref">หน้า 99-100</span></h3>
+                <p><strong>คำจำกัดความ</strong>: ทำการตรงข้ามกับ bandreject filter มีประโยชน์มากใน<strong>การแยก (isolating) ผลบนภาพของ frequency bands ที่เลือก</strong></p>
+                <pre><code>Hbp(u,v) = 1 - Hbr(u,v)</code></pre>
+
+                <h3>5.3 Notch Filters <span class="page-ref">หน้า 101-109</span></h3>
+                <p><strong>คำจำกัดความ</strong>: ปฏิเสธ (หรือผ่าน) ความถี่ใน predefined neighborhood รอบๆ center frequency</p>
+                <p><strong>คุณสมบัติสำคัญ</strong>: <strong>Notch filters ต้องปรากฏเป็นคู่สมมาตรรอบๆ origin</strong></p>
+
+                <div class="example-box">
+                    <h4>Butterworth Notch Reject Filter <span class="page-ref">หน้า 103</span></h4>
+                    <pre><code>H(u,v) = 1 / [1 + D₀²/(D₁(u,v)D₂(u,v))]ⁿ</code></pre>
+                </div>
+
+                <div class="example-box">
+                    <h4>Gaussian Notch Reject Filter <span class="page-ref">หน้า 104</span></h4>
+                    <pre><code>H(u,v) = 1 - exp[-1/2 * D₁(u,v)D₂(u,v)/D₀²]</code></pre>
+                </div>
+            </div>
+
+            <hr>
+            
+            <div class="chapter">
+                <h2>ส่วนที่ 6: การประมาณค่า Degradation Function</h2>
+                <p>เมื่อเราได้รับภาพที่เสื่อมสภาพโดยไม่มีความรู้เกี่ยวกับ degradation function H</p>
+
+                <h3>6.1 Estimation by Image Observation <span class="page-ref">หน้า 111-113</span></h3>
+                <ol>
+                    <li><strong>เลือกส่วนของภาพ</strong>: เลือก subimage (gs) ที่มีโครงสร้างง่ายๆ และ strong signal content</li>
+                    <li><strong>สร้างภาพอุดมคติ</strong>: สร้าง subimage (fs) ที่เราคาดหวัง</li>
+                    <li><strong>คำนวณ Degradation Function</strong>:
+                        <pre><code>Hs(u,v) = Gs(u,v)/Fs(u,v)</code></pre>
+                    </li>
+                    <li><strong>สร้าง H(u,v) ในขนาดใหญ่</strong>: ใช้ Hs(u,v) เพื่ออนุมาน H(u,v) ทั้งหมด</li>
+                </ol>
+
+                <h3>6.2 Estimation by Experimentation <span class="page-ref">หน้า 114-116</span></h3>
+                <p>หากมีอุปกรณ์ที่คล้ายกันพร้อมใช้งาน:</p>
+                <ol>
+                    <li><strong>ถ่ายภาพทดสอบ</strong>: ถ่ายภาพ impulse (จุดเล็กๆ ของแสง) โดยใช้การตั้งค่าระบบเดียวกัน</li>
+                    <li><strong>คำนวณจากสมการ</strong> <span class="page-ref">หน้า 115</span>:
+                        <pre><code>H(u,v) = G(u,v)/A</code></pre>
+                        (G คือ transform ของภาพ impulse, A คือค่าคงที่ความแรง impulse)
+                    </li>
+                </ol>
+
+                <h3>6.3 Estimation by Mathematical Models <span class="page-ref">หน้า 117-119</span></h3>
+                <p>ใช้แบบจำลองทางคณิตศาสตร์ที่คำนึงถึงสภาวะแวดล้อม</p>
+                
+                <div class="example-box">
+                    <h4>Atmospheric Turbulence Model <span class="page-ref">หน้า 117</span></h4>
+                    <pre><code>H(u,v) = exp[-(u² + v²)^(5/6)/k]</code></pre>
+                </div>
+                
+                <div class="example-box">
+                    <h4>Planar Motion Model <span class="page-ref">หน้า 117</span></h4>
+                    <pre><code>H(u,v) = (T/π(ua+vb)) sin[π(ua+vb)] exp[-iπ(ua+vb)]</code></pre>
+                </div>
+            </div>
+            
+            <hr>
+
+            <div class="chapter">
+                <h2>ส่วนที่ 7: การฟื้นฟูภาพที่เสื่อมสภาพจาก Degradation Function</h2>
+
+                <h3>7.1 Inverse Filtering <span class="page-ref">หน้า 120-125</span></h3>
+                
+                <h4>7.1.1 Direct Inverse Filtering <span class="page-ref">หน้า 120</span></h4>
+                <pre><code>F̂(u,v) = G(u,v)/H(u,v)</code></pre>
+
+                <h4>7.1.2 ปัญหาของ Direct Inverse Filtering <span class="page-ref">หน้า 121</span></h4>
+                <pre><code>F(u,v) = [G(u,v) - N(u,v)]/H(u,v)</code></pre>
+                <p><strong>ปัญหา</strong>: หาก H(u,v) มีค่าเล็กมาก การหารจะขยาย noise (N) ทำให้ได้ค่าที่ใหญ่มากซึ่ง dominate output</p>
+                
+                <h4>7.1.3 วิธีแก้ปัญหา <span class="page-ref">หน้า 121-122</span></h4>
+                <ol>
+                    <li><strong>ใช้ Lowpass Filter</strong>: <code>F(u,v) = L(u,v) * G(u,v)/H(u,v)</code></li>
+                    <li><strong>Constrained Division</strong>: เลือก threshold d และ <code>F(u,v) = G(u,v)/H(u,v)</code> เฉพาะเมื่อ <code>H(u,v) ≥ d</code></li>
+                </ol>
+
+                <h3>7.2 Minimum Mean Square Error (Wiener) Filtering <span class="page-ref">หน้า 126-130</span></h3>
+                <p><strong>แนวคิด</strong>: รวมทั้ง <strong>degradation function และลักษณะทางสถิติของ noise</strong> เข้าในกระบวนการฟื้นฟู <span class="page-ref">หน้า 126</span></p>
+                <p><strong>เป้าหมาย</strong>: ทำให้เกิด <strong>minimum mean square error</strong></p>
+
+                <div class="example-box">
+                    <h4>สมการ Wiener Filter <span class="page-ref">หน้า 126</span></h4>
+                    <pre><code>F̂(u,v) = [1/H(u,v)] * [|H(u,v)|²/(|H(u,v)|² + K)] * G(u,v)</code></pre>
+                    <p>หรือ</p>
+                    <pre><code>F̂(u,v) = [H*(u,v)/(|H(u,v)|² + K * Sη(u,v)/Sf(u,v))] * G(u,v)</code></pre>
+                    <p>โดยที่ <strong>Sη(u,v)</strong> คือ power spectrum ของ noise และ <strong>Sf(u,v)</strong> คือ power spectrum ของภาพต้นฉบับ <span class="page-ref">หน้า 127</span></p>
+                </div>
+                
+                <div class="highlight-box">
+                    <h4>ผลลัพธ์เปรียบเทียบ <span class="page-ref">หน้า 130</span></h4>
+                    <ul>
+                        <li><strong>Inverse Filter</strong>: อาจมี artifacts และ noise มากจาก division โดยค่าเล็กๆ ของ H(u,v)</li>
+                        <li><strong>Wiener Filter</strong>: ให้ผลลัพธ์ที่เรียบและดีกว่า โดยคำนึงถึง noise characteristics</li>
+                    </ul>
+                </div>
+            </div>
+
+
+            <div class="summary-box">
+                <h2>🎯 สรุปสาระสำคัญที่สุดของบท</h2>
+                <p><strong>Chapter 5: Image Restoration</strong> นำเสนอแนวทางที่ครอบคลุมในการฟื้นฟูภาพที่เสื่อมสภาพ โดยเริ่มจากการทำความเข้าใจแบบจำลอง degradation และ noise จากนั้นนำเสนอเทคนิคต่างๆ ในการกำจัด noise ทั้งใน spatial และ frequency domain สุดท้ายแสดงวิธีการประมาณค่า degradation function และการใช้เทคนิคการฟื้นฟูขั้นสูง</p>
+                
+                <h4>ประเด็นสำคัญ:</h4>
+                <ol>
+                    <li><strong>แบบจำลอง Degradation</strong>: G(u,v) = F(u,v)H(u,v) + N(u,v) <span class="page-ref">หน้า 5</span></li>
+                    <li><strong>Noise Types</strong>: Gaussian (sensor), Rayleigh (range), Exponential/Gamma (laser), Impulse (switching) <span class="page-ref">หน้า 12-28</span></li>
+                    <li><strong>Spatial Filtering</strong>:
+                        <ul>
+                            <li><strong>Mean Filters</strong> (Arithmetic, Geometric): เหมาะสำหรับ random noise <span class="page-ref">หน้า 49-59</span></li>
+                            <li><strong>Order-Statistics Filters</strong> (Median, Alpha-trimmed): มีประสิทธิภาพสูงสำหรับ impulse noise <span class="page-ref">หน้า 62-79</span></li>
+                            <li><strong>Adaptive Filters</strong> (Spatial Wiener, Adaptive Median): เปลี่ยนพฤติกรรมตามลักษณะ local ของภาพ <span class="page-ref">หน้า 80-91</span></li>
+                        </ul>
+                    </li>
+                    <li><strong>Frequency Domain Filtering</strong> (Bandreject, Notch): เหมาะสำหรับ periodic noise <span class="page-ref">หน้า 92-109</span></li>
+                    <li><strong>Degradation Estimation</strong> (Observation, Experimentation, Models): หาวิธีการประมาณ H(u,v) <span class="page-ref">หน้า 110-119</span></li>
+                    <li><strong>Restoration Methods</strong>:
+                        <ul>
+                            <li><strong>Inverse Filtering</strong>: ง่ายแต่มีปัญหากับ noise <span class="page-ref">หน้า 120</span></li>
+                            <li><strong>Wiener Filtering</strong>: รวม degradation และ noise statistics (ดีที่สุดเมื่อทราบค่า) <span class="page-ref">หน้า 126</span></li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h4>ข้อควรจำสำคัญ:</h4>
+                <ul>
+                    <li>การเลือก filter ขึ้นอยู่กับประเภทของ noise</li>
+                    <li>Adaptive approaches มักให้ผลลัพธ์ที่ดีกว่า fixed filters</li>
+                    <li>Frequency domain filtering มีประสิทธิภาพสูงสำหรับ periodic noise</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

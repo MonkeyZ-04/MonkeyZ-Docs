@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สรุป Memory Management (การจัดการหน่วยความจำ)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .course-code {
+            font-size: 1.2rem;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .toc {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 40px;
+            border-left: 5px solid #667eea;
+        }
+
+        .toc h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .toc li {
+            padding: 8px 15px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .toc li:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(10px);
+        }
+
+        .chapter {
+            margin-bottom: 50px;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h2 {
+            color: #764ba2;
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            margin: 30px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            position: relative;
+        }
+
+        h3 {
+            color: #667eea;
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            margin: 25px 0 15px;
+            padding-left: 15px;
+            border-left: 4px solid #764ba2;
+        }
+
+        h4 {
+            color: #555;
+            font-size: 1.2rem;
+            margin: 20px 0 10px;
+            font-weight: 600;
+        }
+
+        .page-ref {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 2px 8px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            color: #d73a49;
+        }
+
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 15px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+            font-size: 0.9rem;
+        }
+
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border-radius: 10px;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        tr:hover {
+            background: #e3f2fd;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .example-box {
+            background: #151516;
+            border-left: 4px solid #2196f3;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .example-box h4 {
+            color: #2196f3;
+            margin-top: 0;
+        }
+
+        .summary-box {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 30px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .summary-box h2 {
+            color: white;
+            border-bottom: 2px solid rgba(255,255,255,0.5);
+        }
+        
+        /* Custom styles for summary box content */
+        .summary-box h3 {
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            border-left: 4px solid white;
+            margin-top: 30px;
+        }
+        
+        .summary-box h4 {
+            color: #f8f8f8;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .summary-box ul, .summary-box ol {
+            color: #f8f8f8;
+        }
+
+        .summary-box p {
+            color: white;
+        }
+
+        hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+            margin: 30px 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            header {
+                padding: 30px 20px;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            h3 {
+                font-size: 1.2rem;
+            }
+
+            pre {
+                padding: 15px;
+                font-size: 0.85rem;
+            }
+
+            table {
+                font-size: 0.9rem;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+
+            .toc {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .content {
+                padding: 15px;
+            }
+
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .course-code {
+                font-size: 1rem;
+            }
+
+            pre {
+                padding: 10px;
+                font-size: 0.75rem;
+            }
+
+            table {
+                font-size: 0.8rem;
+            }
+
+            .page-ref {
+                display: block;
+                margin: 5px 0;
+            }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #434343 0%, #000000 100%);
+            }
+
+            .container {
+                background: #1e1e1e;
+                color: #e0e0e0;
+            }
+
+            h2, h3, h4 {
+                color: #9c88ff;
+            }
+            
+            h4 {
+                 color: #bbb;
+            }
+
+            .toc {
+                background: #2d2d2d;
+            }
+
+            .toc li {
+                background: #3d3d3d;
+            }
+
+            code {
+                background: #2d2d2d;
+                color: #ff6b6b;
+            }
+
+            table tr:nth-child(even) {
+                background: #2d2d2d;
+            }
+
+            td {
+                border-color: #444;
+            }
+
+            .summary-box h2, .summary-box h3, .summary-box h4, .summary-box p, .summary-box ul, .summary-box ol {
+                color: #1e1e1e;
+            }
+            .summary-box h2 {
+                border-bottom: 2px solid rgba(0,0,0,0.3);
+            }
+            .summary-box h3 {
+                border-left: 4px solid #1e1e1e;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Memory Management (การจัดการหน่วยความจำ)</h1>
+            <div class="course-code">บทสรุปเชิงลึก</div>
+        </header>
+
+        <div class="content">
+            <div class="toc">
+                <h2>📋 สารบัญ</h2>
+                <ul>
+                    <li>🔹 1. พื้นฐานการจัดการหน่วยความจำ (Background)</li>
+                    <li>🔹 2. Contiguous Memory Allocation</li>
+                    <li>🔹 3. Paging</li>
+                    <li>🔹 4. Structure of the Page Table</li>
+                    <li>🔹 5. Swapping</li>
+                    <li>🔹 สรุปสำคัญ</li>
+                </ul>
+            </div>
+
+            <div class="chapter">
+                <p>เอกสารนี้นำเสนอเนื้อหาเกี่ยวกับการจัดการหน่วยความจำ (Memory Management) ในระบบปฏิบัติการ โดยเน้นการบรรยายพัฒนาการทางประวัติศาสตร์ของเทคนิคต่างๆ เพื่อให้เห็นว่าเหตุใดระบบปฏิบัติการสมัยใหม่จึงใช้วิธีการจัดการหน่วยความจำในรูปแบบปัจจุบัน <span class="page-ref">หน้า 1</span></p>
+
+                <h2>1. พื้นฐานการจัดการหน่วยความจำ (Background)</h2>
+
+                <h3>1.1 ความสำคัญของหน่วยความจำ</h3>
+                <p>หน่วยความจำเป็นศูนย์กลางของการทำงานของระบบคอมพิวเตอร์สมัยใหม่ ประกอบด้วยอาร์เรย์ขนาดใหญ่ของไบต์ที่มีแอดเดรสเป็นของตัวเอง CPU ดึงคำสั่งจากหน่วยความจำตามค่าของ program counter และคำสั่งเหล่านี้อาจทำให้เกิดการโหลดหรือเก็บข้อมูลจาก/ไปยังแอดเดรสในหน่วยความจำ <span class="page-ref">หน้า 349-350</span></p>
+
+                <h4>วงจรการทำงานของคำสั่งทั่วไป (instruction-execution cycle):</h4>
+                <ol>
+                    <li>ดึงคำสั่งจากหน่วยความจำ</li>
+                    <li>ถอดรหัสคำสั่ง ซึ่งอาจทำให้ต้องดึง operands จากหน่วยความจำ</li>
+                    <li>ประมวลผลคำสั่งด้วย operands</li>
+                    <li>เก็บผลลัพธ์กลับไปยังหน่วยความจำ <span class="page-ref">หน้า 350</span></li>
+                </ol>
+
+                <h3>1.2 ฮาร์ดแวร์พื้นฐาน (Basic Hardware)</h3>
+                <h4>ความเร็วในการเข้าถึง:</h4>
+                <ul>
+                    <li><strong>Registers:</strong> เข้าถึงได้ภายใน 1 clock cycle</li>
+                    <li><strong>Main Memory (DRAM):</strong> อาจใช้หลาย clock cycles ทำให้ CPU ต้อง stall</li>
+                    <li><strong>Cache:</strong> หน่วยความจำเร็วระหว่าง CPU และ main memory เพื่อแก้ปัญหาความล่าช้า <span class="page-ref">หน้า 350</span></li>
+                </ul>
+
+                <h4>การป้องกันหน่วยความจำ (Memory Protection):</h4>
+                <p>ระบบใช้ Base Register และ Limit Register เพื่อแยกพื้นที่หน่วยความจำของแต่ละ process:</p>
+                <ul>
+                    <li><strong>Base Register:</strong> เก็บแอดเดรสฟิสิคัลที่เล็กที่สุดที่ถูกต้อง</li>
+                    <li><strong>Limit Register:</strong> ระบุขนาดของช่วงแอดเดรสที่ process สามารถเข้าถึงได้</li>
+                </ul>
+                <p>ตัวอย่าง: ถ้า base = 300040 และ limit = 120900 แล้ว process สามารถเข้าถึงแอดเดรส 300040-420939 ได้เท่านั้น <span class="page-ref">หน้า 351</span></p>
+                <p>กลไกการป้องกัน: CPU ฮาร์ดแวร์เปรียบเทียบทุกแอดเดรสที่สร้างใน user mode กับ registers เหล่านี้ การพยายามเข้าถึงนอกขอบเขตจะทำให้เกิด trap ไปยัง operating system <span class="page-ref">หน้า 351, Figure 9.2 หน้า 352</span></p>
+
+                <h3>1.3 Address Binding</h3>
+                <p>โปรแกรมผ่านหลายขั้นตอนก่อนถูกประมวลผล และแอดเดรสอาจถูกแทนค่าในหลายรูปแบบ:</p>
+                <ul>
+                    <li><strong>แอดเดรสใน source code:</strong> เป็นแบบ symbolic (เช่น ตัวแปร count)</li>
+                    <li><strong>Compiler binding:</strong> แปลงเป็น relocatable addresses (เช่น "14 bytes from the beginning of this module")</li>
+                    <li><strong>Linker/Loader binding:</strong> แปลงเป็น absolute addresses (เช่น 74014) <span class="page-ref">หน้า 352</span></li>
+                </ul>
+
+                <h4>ประเภทของ Address Binding:</h4>
+                
+                <h4>Compile Time Binding</h4>
+                <ul>
+                    <li>ถ้ารู้ที่ตำแหน่งของ process ในหน่วยความจำตอน compile time</li>
+                    <li>สร้าง absolute code ได้เลย</li>
+                    <li>ข้อเสีย: ถ้าตำแหน่งเปลี่ยนต้อง recompile <span class="page-ref">หน้า 352</span></li>
+                </ul>
+
+                <h4>Load Time Binding</h4>
+                <ul>
+                    <li>ถ้าไม่รู้ตำแหน่งตอน compile time</li>
+                    <li>Compiler สร้าง relocatable code</li>
+                    <li>Binding รอจนถึง load time</li>
+                    <li>ข้อดี: เปลี่ยนตำแหน่งได้โดย reload เท่านั้น <span class="page-ref">หน้า 353</span></li>
+                </ul>
+
+                <h4>Execution Time Binding</h4>
+                <ul>
+                    <li>ถ้า process สามารถเคลื่อนย้ายระหว่างการทำงานได้</li>
+                    <li>Binding เกิดตอน run time</li>
+                    <li>ต้องการฮาร์ดแวร์พิเศษ (MMU)</li>
+                    <li>ระบบปฏิบัติการส่วนใหญ่ใช้วิธีนี้ <span class="page-ref">หน้า 353</span></li>
+                </ul>
+
+                <h3>1.4 Logical vs. Physical Address Space</h3>
+                <h4>คำจำกัดความ:</h4>
+                <ul>
+                    <li><strong>Logical Address (Virtual Address):</strong> แอดเดรสที่ CPU สร้างขึ้น</li>
+                    <li><strong>Physical Address:</strong> แอดเดรสจริงในหน่วยความจำ <span class="page-ref">หน้า 353-354</span></li>
+                </ul>
+
+                <h4>Memory Management Unit (MMU):</h4>
+                <p>อุปกรณ์ฮาร์ดแวร์ที่แปลง virtual address เป็น physical address ตอน run-time</p>
+                
+                <h4>การทำงาน (ตัวอย่างแบบง่าย):</h4>
+                <ul>
+                    <li>ใช้ Relocation Register (เดิมคือ Base Register)</li>
+                    <li>บวกค่าใน relocation register กับทุก logical address ที่ process สร้าง</li>
+                    <li>ตัวอย่าง: ถ้า base = 14000, logical address 0 → physical address 14000 <span class="page-ref">หน้า 354, Figure 9.5</span></li>
+                </ul>
+
+                <h4>ประโยชน์:</h4>
+                <ul>
+                    <li>User program ไม่เคยเข้าถึง physical addresses โดยตรง</li>
+                    <li>Logical address space แยกจาก physical address space โดยสิ้นเชิง</li>
+                    <li>Process สามารถมี logical 64-bit address space แม้ระบบมี physical memory น้อยกว่า <span class="page-ref">หน้า 354, 360</span></li>
+                </ul>
+
+                <h3>1.5 Dynamic Loading</h3>
+                <p>เทคนิคการโหลด routine เฉพาะเมื่อถูกเรียกใช้:</p>
+                <ul>
+                    <li><strong>หลักการ:</strong> routine ทั้งหมดเก็บบน disk ในรูปแบบ relocatable</li>
+                    <li>Main program โหลดเข้าหน่วยความจำและทำงาน</li>
+                    <li>เมื่อต้องการเรียก routine อื่น ตรวจสอบว่าโหลดแล้วหรือยัง</li>
+                    <li>ถ้ายังไม่โหลด เรียก relocatable linking loader เพื่อโหลด routine นั้น <span class="page-ref">หน้า 355</span></li>
+                </ul>
+
+                <h4>ข้อดี:</h4>
+                <ul>
+                    <li>โหลดเฉพาะ code ที่จำเป็นใช้จริง</li>
+                    <li>เหมาะกับกรณีที่มี code จำนวนมากสำหรับจัดการ error cases ที่เกิดไม่บ่อย</li>
+                    <li>ไม่ต้องการ support พิเศษจาก OS <span class="page-ref">หน้า 355</span></li>
+                </ul>
+
+                <h3>1.6 Dynamic Linking และ Shared Libraries</h3>
+                <p><strong>Dynamic Linking:</strong> แตกต่างจาก static linking โดย linking เกิดขึ้นตอน run time แทนที่จะเป็น load time <span class="page-ref">หน้า 355-356</span></p>
+                <p><strong>Static Linking:</strong></p>
+                <ul>
+                    <li>System libraries รวมเข้าไปใน binary program image</li>
+                    <li>แต่ละ program มีสำเนาของ library</li>
+                    <li>ตัวอย่าง: 40 processes ใช้ libc (2 MB) = ต้องใช้ 80 MB</li>
+                </ul>
+                <p><strong>Dynamic Linking (DLLs/Shared Libraries):</strong></p>
+                <ul>
+                    <li>Libraries เชื่อมต่อตอน run time</li>
+                    <li>มีเพียง 1 สำเนาของ library ใน main memory</li>
+                    <li>ตัวอย่างเดียวกัน: ต้องใช้แค่ 2 MB แทน 80 MB <span class="page-ref">หน้า 356</span></li>
+                </ul>
+
+                <h4>กลไกการทำงาน:</h4>
+                <ul>
+                    <li>โปรแกรมอ้างถึง routine ใน dynamic library</li>
+                    <li>Loader หา DLL และโหลดเข้า memory (ถ้าจำเป็น)</li>
+                    <li>ปรับ addresses ของ functions ใน DLL ให้ตรงกับตำแหน่งใน memory <span class="page-ref">หน้า 356</span></li>
+                </ul>
+
+                <h4>ข้อดีเพิ่มเติม:</h4>
+                <ul>
+                    <li>สามารถ update libraries ได้ (เช่น แก้ bug)</li>
+                    <li>โปรแกรมจะใช้เวอร์ชันใหม่โดยอัตโนมัติ</li>
+                    <li>Version information ป้องกันการใช้เวอร์ชันที่เข้ากันไม่ได้</li>
+                    <li>ต้องการความช่วยเหลือจาก OS เพื่อให้ processes หลายตัวเข้าถึง memory addresses เดียวกันได้ <span class="page-ref">หน้า 356</span></li>
+                </ul>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>2. Contiguous Memory Allocation</h2>
+                
+                <h3>2.1 แนวคิดพื้นฐาน</h3>
+                <p>หน่วยความจำแบ่งเป็น 2 partitions:</p>
+                <ul>
+                    <li><strong>OS Partition:</strong> สำหรับระบบปฏิบัติการ (โดยทั่วไปอยู่ที่ high memory)</li>
+                    <li><strong>User Partition:</strong> สำหรับ user processes <span class="page-ref">หน้า 356</span></li>
+                </ul>
+                <p>ในระบบนี้ แต่ละ process อยู่ในส่วนเดียวของหน่วยความจำที่ต่อเนื่องกัน (contiguous) <span class="page-ref">หน้า 357</span></p>
+
+                <h3>2.2 Memory Allocation Strategies</h3>
+                <h4>Variable-Partition Scheme:</h4>
+                <ul>
+                    <li>OS เก็บ table ระบุส่วนไหนของหน่วยความจำว่างและส่วนไหนถูกใช้</li>
+                    <li>เริ่มต้น: หน่วยความจำทั้งหมดเป็น hole (ช่องว่าง) เดียวขนาดใหญ่</li>
+                    <li>เมื่อ process มา: จัดสรร memory จาก hole ที่มี</li>
+                    <li>เมื่อ process จบ: คืน memory กลับเป็น hole <span class="page-ref">หน้า 358, Figure 9.7</span></li>
+                </ul>
+
+                <h4>Dynamic Storage-Allocation Problem:</h4>
+                <p>หาวิธีจัดสรร memory ขนาด n จาก list ของ free holes มี 3 กลยุทธ์หลัก:</p>
+
+                <h4>First Fit</h4>
+                <ul>
+                    <li>จัดสรร hole แรกที่ใหญ่พอ</li>
+                    <li>ค้นหาจากต้นหรือจากจุดที่ first-fit ครั้งก่อนจบ</li>
+                    <li>หยุดทันทีที่เจอ hole ที่เหมาะสม</li>
+                    <li>โดยทั่วไปเร็วกว่า best fit <span class="page-ref">หน้า 359</span></li>
+                </ul>
+
+                <h4>Best Fit</h4>
+                <ul>
+                    <li>จัดสรร hole ที่เล็กที่สุดที่ใหญ่พอ</li>
+                    <li>ต้องค้นหาทั้ง list (เว้นแต่จะ sort ตามขนาด)</li>
+                    <li>สร้าง leftover hole ที่เล็กที่สุด <span class="page-ref">หน้า 359</span></li>
+                </ul>
+
+                <h4>Worst Fit</h4>
+                <ul>
+                    <li>จัดสรร hole ที่ใหญ่ที่สุด</li>
+                    <li>ต้องค้นหาทั้ง list (เว้นแต่จะ sort ตามขนาด)</li>
+                    <li>สร้าง leftover hole ที่ใหญ่ที่สุด ซึ่งอาจมีประโยชน์มากกว่า <span class="page-ref">หน้า 359</span></li>
+                </ul>
+
+                <h4>ผลการศึกษาจาก Simulations:</h4>
+                <ul>
+                    <li>First fit และ best fit ดีกว่า worst fit ในแง่เวลาและการใช้ storage</li>
+                    <li>First fit กับ best fit ไม่มีใครดีกว่าใครชัดเจนในแง่ storage utilization</li>
+                    <li>แต่ first fit โดยทั่วไปเร็วกว่า <span class="page-ref">หน้า 359</span></li>
+                </ul>
+
+                <h3>2.3 Fragmentation</h3>
+                <h4>External Fragmentation:</h4>
+                <ul>
+                    <li>เกิดเมื่อมี memory ว่างรวมกันพอ แต่ไม่ต่อเนื่องกัน</li>
+                    <li>Free memory แตกเป็นชิ้นเล็กๆ</li>
+                    <li>ในกรณีแย่ที่สุด: อาจมี block ของ free memory ระหว่างทุกๆ 2 processes <span class="page-ref">หน้า 359</span></li>
+                </ul>
+                
+                <h4>50-Percent Rule:</h4>
+                <ul>
+                    <li>การวิเคราะห์ทางสถิติของ first fit พบว่า ถ้ามี N allocated blocks จะสูญเสีย 0.5N blocks จาก fragmentation</li>
+                    <li>หมายความว่า 1/3 ของหน่วยความจำอาจใช้ไม่ได้! <span class="page-ref">หน้า 359</span></li>
+                </ul>
+
+                <h4>Internal Fragmentation:</h4>
+                <ul>
+                    <li>เกิดจากการจัดสรร memory เป็น fixed-size blocks</li>
+                    <li>Memory ที่จัดสรรให้ process อาจมากกว่าที่ขอเล็กน้อย</li>
+                    <li>ตัวอย่าง: hole ขนาด 18,464 bytes, process ขอ 18,462 bytes → เหลือ 2 bytes ซึ่ง overhead ในการ track จะมากกว่าตัว hole เอง <span class="page-ref">หน้า 359</span></li>
+                </ul>
+
+                <h4>วิธีแก้ External Fragmentation:</h4>
+                <ul>
+                    <li><strong>Compaction</strong>
+                        <ul>
+                            <li>สับเปลี่ยนเนื้อหาของหน่วยความจำเพื่อรวม free memory ให้เป็น block ใหญ่เดียว</li>
+                            <li>ข้อจำกัด: เป็นไปได้เฉพาะถ้า relocation เป็นแบบ dynamic (execution time)</li>
+                            <li>ข้อเสีย: มีค่าใช้จ่ายสูง <span class="page-ref">หน้า 360</span></li>
+                        </ul>
+                    </li>
+                    <li><strong>Non-contiguous Memory Allocation</strong>
+                        <ul>
+                            <li>อนุญาตให้ logical address space ของ process ไม่ต่อเนื่องกัน</li>
+                            <li>Process สามารถได้รับ physical memory จากที่ใดก็ได้ที่มี</li>
+                            <li>นำไปสู่เทคนิค <strong>Paging</strong> <span class="page-ref">หน้า 360</span></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>3. Paging</h2>
+                <p>Paging เป็นเทคนิคการจัดการหน่วยความจำที่อนุญาตให้ physical address space ของ process ไม่ต่อเนื่องกัน ช่วยหลีกเลี่ยง external fragmentation และปัญหา compaction <span class="page-ref">หน้า 360</span></p>
+
+                <h3>3.1 Basic Method</h3>
+                <h4>แนวคิดหลัก:</h4>
+                <ul>
+                    <li>แบ่ง <strong>physical memory</strong> เป็น fixed-sized blocks ที่เรียกว่า <strong>frames</strong></li>
+                    <li>แบ่ง <strong>logical memory</strong> เป็น blocks ขนาดเท่ากันที่เรียกว่า <strong>pages</strong></li>
+                    <li>Page size = Frame size (โดยทั่วไป 4 KB หรือ 8 KB)</li>
+                    <li>เมื่อ process ทำงาน pages ของมันถูกโหลดเข้า frames ที่ว่างใดๆ จาก backing store <span class="page-ref">หน้า 360</span></li>
+                </ul>
+
+                <h4>โครงสร้าง Logical Address:</h4>
+                <p>Logical address แบ่งเป็น 2 ส่วน:</p>
+                <ul>
+                    <li><strong>Page Number (p):</strong> ใช้เป็น index เข้า page table</li>
+                    <li><strong>Page Offset (d):</strong> ตำแหน่งภายใน page/frame</li>
+                </ul>
+                <p>ถ้า logical address space = 2^m และ page size = 2^n:</p>
+                <ul>
+                    <li>p = m - n bits (high-order bits)</li>
+                    <li>d = n bits (low-order bits) <span class="page-ref">หน้า 360-361</span></li>
+                </ul>
+
+                <h4>ขั้นตอนการแปล Address (MMU):</h4>
+                <ol>
+                    <li>แยก page number p และใช้เป็น index เข้า page table</li>
+                    <li>ดึง frame number f จาก page table</li>
+                    <li>แทนที่ page number p ด้วย frame number f</li>
+                    <li>Page offset d คงเดิม</li>
+                    <li>Frame number และ offset รวมกันเป็น physical address <span class="page-ref">หน้า 361, Figure 9.8</span></li>
+                </ol>
+
+                <h4>ตัวอย่างเฉพาะ:</h4>
+                <ul>
+                    <li>Logical address space: 14 bits (m=4), Page size: 4 bytes (n=2)</li>
+                    <li>มี memory 32 bytes (8 pages)</li>
+                    <li>Logical address 0 (page 0, offset 0) → page table บอกว่า page 0 อยู่ frame 5 → physical address 20 [= (5×4) + 0]</li>
+                    <li>Logical address 13 → physical address 9 <span class="page-ref">หน้า 362, Figure 9.10</span></li>
+                </ul>
+
+                <h4>ข้อดีของ Paging:</h4>
+                <ul>
+                    <li>ไม่มี external fragmentation: frame ว่างใดก็ตามสามารถจัดสรรให้ process ได้</li>
+                    <li>Separation ชัดเจน: programmer's view of memory แยกจาก actual physical memory</li>
+                    <li>Process ไม่สามารถเข้าถึง memory ที่ไม่ได้เป็นเจ้าของ เพราะไม่มีทางอ้างถึง memory นอก page table ของตัวเอง <span class="page-ref">หน้า 362, 365</span></li>
+                </ul>
+
+                <h4>ข้อเสียของ Paging:</h4>
+                <ul>
+                    <li><strong>Internal Fragmentation:</strong> page สุดท้ายของ process อาจไม่เต็ม
+                        <ul>
+                            <li>ตัวอย่าง: page size 2,048 bytes, process 72,766 bytes → ต้องการ 36 frames → internal fragmentation 962 bytes</li>
+                        </ul>
+                    </li>
+                    <li><strong>กรณีแย่ที่สุด:</strong> process ต้องการ n pages + 1 byte → จัดสรร n+1 frames → internal fragmentation เกือบ 1 frame <span class="page-ref">หน้า 362-363</span></li>
+                </ul>
+
+                <h4>ขนาด Page:</h4>
+                <ul>
+                    <li><strong>Trade-off:</strong> page เล็ก → internal fragmentation น้อยลง แต่ overhead ของ page-table entry เพิ่มขึ้น</li>
+                    <li><strong>ปัจจุบัน:</strong> page มักเป็น 4 KB หรือ 8 KB</li>
+                    <li><strong>บาง systems</strong> รองรับหลายขนาด เช่น Windows 10 บน x86-64: 4 KB และ 2 MB <span class="page-ref">หน้า 363</span></li>
+                </ul>
+
+                <h3>3.2 Hardware Support</h3>
+                <h4>Page Table Storage:</h4>
+                <ul>
+                    <li><strong>ในระบบที่ง่ายที่สุด</strong> page table อาจเป็น dedicated hardware registers แต่วิธีนี้:
+                        <ul>
+                            <li>ใช้ได้กับ page table ที่เล็ก (เช่น 256 entries)</li>
+                            <li>Context-switch time เพิ่มขึ้นเพราะต้องเปลี่ยน registers ทั้งหมด <span class="page-ref">หน้า 365</span></li>
+                        </ul>
+                    </li>
+                    <li><strong>ในระบบสมัยใหม่:</strong>
+                        <ul>
+                            <li>Page table เก็บใน <strong>main memory</strong></li>
+                            <li><strong>Page-Table Base Register (PTBR)</strong> ชี้ไปที่ page table</li>
+                            <li>เปลี่ยน page table ได้โดยเปลี่ยนแค่ PTBR → context-switch เร็วขึ้น</li>
+                            <li>แต่ memory access ช้าลง (ต้องเข้าถึง memory 2 ครั้ง: 1 ครั้งสำหรับ page table, 1 ครั้งสำหรับข้อมูล) <span class="page-ref">หน้า 365-366</span></li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h4>Translation Look-Aside Buffer (TLB):</h4>
+                <ul>
+                    <li><strong>คำจำกัดความ:</strong> TLB เป็น associative, high-speed memory cache เล็กๆ เร็วๆ สำหรับเก็บ page-table entries ที่ใช้บ่อย <span class="page-ref">หน้า 366</span></li>
+                    <li><strong>คุณสมบัติ:</strong>
+                        <ul>
+                            <li>ขนาด: โดยทั่วไป 32-1,024 entries</li>
+                            <li>ความเร็ว: TLB lookup เป็นส่วนหนึ่งของ instruction pipeline → ไม่มี performance penalty</li>
+                            <li>บาง CPUs มี separate instruction TLB และ data TLB <span class="page-ref">หน้า 366</span></li>
+                        </ul>
+                    </li>
+                    <li><strong>การทำงานของ TLB:</strong>
+                        <ol>
+                            <li>CPU สร้าง logical address</li>
+                            <li>MMU ตรวจสอบ TLB ก่อนว่ามี page number นี้หรือไม่</li>
+                            <li>ถ้าเจอ (TLB hit): ใช้ frame number จาก TLB ทันที</li>
+                            <li>ถ้าไม่เจอ (TLB miss): ต้องเข้าถึง page table ใน memory, แล้ว add entry ใหม่เข้า TLB <span class="page-ref">หน้า 366, Figure 9.12</span></li>
+                        </ol>
+                    </li>
+                    <li><strong>Replacement Policy:</strong>
+                        <ul>
+                            <li>เมื่อ TLB เต็ม ต้องเลือก entry เก่าออก</li>
+                            <li>วิธีการ: LRU, round-robin, random</li>
+                            <li>บาง entries สามารถ <strong>wired down</strong> (ไม่ให้ลบออก) เช่น entry สำหรับ kernel code <span class="page-ref">หน้า 366</span></li>
+                        </ul>
+                    </li>
+                    <li><strong>Address-Space Identifiers (ASIDs):</strong>
+                        <ul>
+                            <li>ASID ระบุ process แต่ละตัวอย่างไม่ซ้ำกัน</li>
+                            <li>เก็บใน TLB entry เพื่อให้ address-space protection</li>
+                            <li>ประโยชน์: TLB สามารถเก็บ entries ของหลาย processes พร้อมกันได้</li>
+                            <li>ถ้าไม่มี ASID: ต้อง flush TLB ทุกครั้งที่ context switch <span class="page-ref">หน้า 366-367</span></li>
+                        </ul>
+                    </li>
+                    <li><strong>Hit Ratio และ Effective Access Time:</strong>
+                        <ul>
+                            <li>Hit Ratio: เปอร์เซ็นต์ที่หา page number ใน TLB เจอ</li>
+                            <li>ตัวอย่างการคำนวณ (สมมติ memory access = 10 nanoseconds):
+                                <ul>
+                                    <li>80% hit ratio: Effective access time = 0.80 × 10 + 0.20 × 20 = 12 nanoseconds (Slowdown 20%) <span class="page-ref">หน้า 367</span></li>
+                                    <li>99% hit ratio: Effective access time = 0.99 × 10 + 0.01 × 20 = 10.1 nanoseconds (Slowdown เพียง 1%) <span class="page-ref">หน้า 367</span></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li><strong>ตัวอย่าง Intel Core i7:</strong>
+                        <ul>
+                            <li>L1 instruction TLB: 128 entries</li>
+                            <li>L1 data TLB: 64 entries</li>
+                            <li>L2 TLB: 512 entries (miss ที่ L1 ใช้ 6 cycles)</li>
+                            <li>Miss ที่ L2: ต้อง walk through page-table entries หรือ interrupt OS (ใช้หลายร้อย cycles) <span class="page-ref">หน้า 368</span></li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3>3.3 Protection</h3>
+                <h4>Protection Bits:</h4>
+                <p>ในแต่ละ page-table entry มี protection bits เพื่อควบคุมการเข้าถึง:</p>
+                <ul>
+                    <li>Read-only</li>
+                    <li>Read-write</li>
+                    <li>Execute-only</li>
+                    <li>หรือ combination ใดๆ <span class="page-ref">หน้า 368</span></li>
+                </ul>
+                <p>การพยายามเข้าถึงผิดประเภท (เช่น write ไปยัง read-only page) จะทำให้เกิด hardware trap ไปยัง OS <span class="page-ref">หน้า 368</span></p>
+
+                <h4>Valid-Invalid Bit:</h4>
+                <p>แต่ละ page-table entry มี valid-invalid bit:</p>
+                <ul>
+                    <li><strong>Valid (v):</strong> page อยู่ใน logical address space ของ process (ถูกต้อง)</li>
+                    <li><strong>Invalid (i):</strong> page ไม่อยู่ใน logical address space (ผิดกฎหมาย) <span class="page-ref">หน้า 368</span></li>
+                </ul>
+                
+                <h4>ตัวอย่าง (Figure 9.13, <span class="page-ref">หน้า 369</span>):</h4>
+                <ul>
+                    <li>Address space: 14-bit (0-16383)</li>
+                    <li>Program ใช้แค่ addresses 0-10468</li>
+                    <li>Page size: 2 KB</li>
+                    <li>Pages 0-5: valid (v)</li>
+                    <li>Pages 6-7: invalid (i)</li>
+                    <li>แต่มีปัญหา: addresses ถึง 12287 ก็ยัง valid แม้โปรแกรมใช้ถึง 10468 เท่านั้น → internal fragmentation</li>
+                </ul>
+
+                <h4>Page-Table Length Register (PTLR):</h4>
+                <p>บางระบบใช้ PTLR เพื่อระบุขนาดของ page table ตรวจสอบทุก logical address ว่าอยู่ใน valid range หรือไม่ <span class="page-ref">หน้า 369</span></p>
+
+                <h3>3.4 Shared Pages</h3>
+                <h4>หลักการ:</h4>
+                <p>ถ้า code เป็น <strong>reentrant code</strong> (non-self-modifying code) หลาย processes สามารถ execute code เดียวกันพร้อมกันได้ แต่ละ process มี registers และ data storage เป็นของตัวเอง <span class="page-ref">หน้า 369-370</span></p>
+
+                <h4>ตัวอย่าง Standard C Library (libc):</h4>
+                <ul>
+                    <li>ถ้าไม่ share: 40 processes × 2 MB = 80 MB</li>
+                    <li>ถ้า share: เพียง 1 copy = 2 MB</li>
+                    <li>แต่ละ process มี page table ที่ map ไปยัง physical copy เดียวกันของ libc <span class="page-ref">หน้า 370, Figure 9.14</span></li>
+                </ul>
+
+                <h4>การใช้งาน:</h4>
+                <ul>
+                    <li>Shared libraries (Section 9.1.5) มักใช้ shared pages</li>
+                    <li>Code ต้องเป็น reentrant และ read-only</li>
+                    <li>OS ต้อง enforce read-only property <span class="page-ref">หน้า 370</span></li>
+                </ul>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>4. Structure of the Page Table</h2>
+                <p>เนื่องจาก logical address space ใหญ่มาก (232 ถึง 264) page table เองจึงใหญ่เกินไป จึงต้องมีเทคนิคในการจัดโครงสร้าง page table <span class="page-ref">หน้า 371</span></p>
+
+                <h3>4.1 Hierarchical Paging</h3>
+                <h4>ปัญหา:</h4>
+                <p>ใน 32-bit system, page size 4 KB:</p>
+                <ul>
+                    <li>Page table อาจมี > 1 million entries (220 = 232/212)</li>
+                    <li>ถ้า entry ละ 4 bytes → ต้องการ 4 MB สำหรับ page table ของแต่ละ process! <span class="page-ref">หน้า 371</span></li>
+                </ul>
+
+                <h4>วิธีแก้: Two-Level Paging</h4>
+                <p>แบ่ง page number เป็น 2 ระดับ:</p>
+                <ul>
+                    <li><strong>p1:</strong> index เข้า outer page table (10 bits)</li>
+                    <li><strong>p2:</strong> displacement ใน page ของ inner page table (10 bits)</li>
+                    <li><strong>d:</strong> page offset (12 bits) <span class="page-ref">หน้า 371, Figure 9.15-9.16</span></li>
+                </ul>
+
+                <h4>ข้อดี:</h4>
+                <ul>
+                    <li>Outer page table มี 210 = 1K entries</li>
+                    <li>Each inner page table มี 210 = 1K entries</li>
+                    <li>Process ใหม่ต้องใช้ 210 + 210 = 2K entries แทน 1M entries <span class="page-ref">หน้า 371, Figure 9.15 จาก slides</span></li>
+                </ul>
+
+                <h4>Forward-Mapped Page Table:</h4>
+                <p>Address translation ทำงานจาก outer page table เข้าไปด้านใน จึงเรียกว่า forward-mapped <span class="page-ref">หน้า 371</span></p>
+
+                <h4>ปัญหากับ 64-bit Systems:</h4>
+                <p>ใน 64-bit system:</p>
+                <ul>
+                    <li>Page table อาจมี 252 entries</li>
+                    <li>Two-level paging: outer page table ยังใหญ่ 244 bytes!</li>
+                    <li>Three-level paging: outer page table ยังใหญ่ 234 bytes (16 GB)!</li>
+                    <li>64-bit UltraSPARC จะต้องการ 7 levels → จำนวน memory accesses มากเกินไป <span class="page-ref">หน้า 371-373</span></li>
+                </ul>
+
+                <h4>สรุป:</h4>
+                <p>Hierarchical page tables ไม่เหมาะกับ 64-bit architectures <span class="page-ref">หน้า 373</span></p>
+
+                <h3>4.2 Hashed Page Tables</h3>
+                <h4>แนวคิด:</h4>
+                <p>ใช้ hash table โดย hash value คือ virtual page number เหมาะสำหรับ address spaces > 32 bits <span class="page-ref">หน้า 373</span></p>
+                
+                <h4>โครงสร้าง:</h4>
+                <p>แต่ละ entry ใน hash table มี linked list ของ elements ที่ hash ไปยัง location เดียวกัน แต่ละ element ประกอบด้วย:</p>
+                <ul>
+                    <li>Virtual page number</li>
+                    <li>Mapped page frame</li>
+                    <li>Pointer ไป element ถัดไปใน linked list <span class="page-ref">หน้า 373</span></li>
+                </ul>
+
+                <h4>อัลกอริทึม:</h4>
+                <ol>
+                    <li>Hash virtual page number เข้า hash table</li>
+                    <li>เปรียบเทียบ virtual page number กับ field 1 ของ element แรกใน linked list</li>
+                    <li>ถ้าตรงกัน: ใช้ page frame (field 2) สร้าง physical address</li>
+                    <li>ถ้าไม่ตรง: ค้นหา entries ถัดไปใน linked list <span class="page-ref">หน้า 373, Figure 9.17</span></li>
+                </ol>
+
+                <h4>Clustered Page Tables:</h4>
+                <p>Variation ที่มีประโยชน์สำหรับ 64-bit address spaces:</p>
+                <ul>
+                    <li>แต่ละ entry ใน hash table อ้างถึงหลาย pages (เช่น 16 pages) แทนที่จะเป็น single page</li>
+                    <li>Entry เดียวเก็บ mappings สำหรับหลาย physical-page frames</li>
+                    <li>เหมาะกับ <strong>sparse address spaces</strong> (memory references กระจัดกระจายใน address space) <span class="page-ref">หน้า 374</span></li>
+                </ul>
+
+                <h4>ตัวอย่างการคำนวณ (จาก slides <span class="page-ref">หน้า 372</span>):</h4>
+                <ul>
+                    <li>สมมติ hash table ขนาด 220 = 1 million entries</li>
+                    <li>จำนวน pages = 223 (8 million pages)</li>
+                    <li>Linked list ยาวเฉลี่ย = 223 / 220 = 8</li>
+                    <li>วิธีนี้ใช้ได้เพราะไม่มีใครใช้ memory space ถึง 264 จริงๆ</li>
+                </ul>
+
+                <h3>4.3 Inverted Page Tables</h3>
+                <h4>แนวคิด:</h4>
+                <p>แทนที่จะมี page table per process มี page table เพียงตารางเดียวสำหรับทั้งระบบ โดยมี entry หนึ่งต่อแต่ละ <strong>frame</strong> ของ physical memory <span class="page-ref">หน้า 374</span></p>
+
+                <h4>โครงสร้าง Entry:</h4>
+                <ul>
+                    <li>Virtual address ของ page ที่เก็บใน frame นั้น</li>
+                    <li>ข้อมูลเกี่ยวกับ process ที่เป็นเจ้าของ page</li>
+                    <li>มักมี <strong>Address-Space Identifier (ASID)</strong> เพราะ table เก็บหลาย address spaces <span class="page-ref">หน้า 374</span></li>
+                </ul>
+
+                <h4>ตัวอย่าง IBM RT:</h4>
+                <p>Virtual address = &lt;process-id, page-number, offset&gt; Inverted page-table entry = &lt;process-id, page-number&gt;</p>
+
+                <h4>การทำงาน:</h4>
+                <ol>
+                    <li>นำเสนอ &lt;process-id, page-number&gt; ไปยัง memory subsystem</li>
+                    <li>ค้นหา inverted page table</li>
+                    <li>ถ้าเจอที่ entry i → physical address = &lt;i, offset&gt;</li>
+                    <li>ถ้าไม่เจอ → illegal address access <span class="page-ref">หน้า 375</span></li>
+                </ol>
+
+                <h4>ข้อดี:</h4>
+                <ul>
+                    <li>ลดปริมาณ memory ที่ต้องใช้เก็บ page table อย่างมาก</li>
+                    <li>เหมาะกับระบบที่มี physical memory ไม่มากเมื่อเทียบกับ logical address space</li>
+                </ul>
+
+                <h4>ข้อเสีย:</h4>
+                <ul>
+                    <li>เวลาในการค้นหาเพิ่มขึ้น:
+                        <ul>
+                            <li>Table sort ตาม physical address แต่ lookup ใช้ virtual addresses</li>
+                            <li>อาจต้องค้นหาทั้ง table</li>
+                        </ul>
+                    </li>
+                    <li>แก้ไขโดยใช้ <strong>hash table</strong> (Section 9.4.2) เพื่อจำกัดการค้นหา</li>
+                    <li>แต่แต่ละ virtual memory reference ต้อง access real memory อย่างน้อย 2 ครั้ง (hash table + page table)</li>
+                    <li>TLB ช่วยปรับปรุง performance <span class="page-ref">หน้า 375</span></li>
+                </ul>
+
+                <h4>ปัญหา Shared Memory:</h4>
+                <ul>
+                    <li>ด้วย standard paging: แต่ละ process มี page table ของตัวเอง → multiple virtual addresses สามารถ map ไปยัง same physical address ได้</li>
+                    <li>ด้วย inverted page tables: มี 1 virtual page entry ต่อ 1 physical page → 1 physical page ไม่สามารถมี 2+ shared virtual addresses</li>
+                    <li>ได้เพียง 1 mapping ของ virtual address ไปยัง shared physical address ในเวลาใดเวลาหนึ่ง</li>
+                    <li>การอ้างถึงโดย process อื่นที่ share memory จะทำให้เกิด page fault และแทนที่ mapping ด้วย virtual address อื่น <span class="page-ref">หน้า 375</span></li>
+                </ul>
+
+                <h4>ตัวอย่างระบบที่ใช้:</h4>
+                <p>64-bit UltraSPARC, PowerPC, IBM RT <span class="page-ref">หน้า 375</span></p>
+
+                <h3>4.4 Oracle SPARC Solaris</h3>
+                <p>ตัวอย่างระบบ 64-bit ที่ integrated กันแน่นระหว่าง CPU และ OS เพื่อให้ virtual memory มี low-overhead โดยใช้ hashed page tables <span class="page-ref">หน้า 375</span></p>
+
+                <h4>โครงสร้าง:</h4>
+                <ul>
+                    <li>มี 2 hash tables: 1 สำหรับ kernel, 1 สำหรับ user processes</li>
+                    <li>แต่ละ entry แทน contiguous area ของ mapped virtual memory (มีประสิทธิภาพมากกว่า entry ต่อ page)</li>
+                    <li>แต่ละ entry มี:
+                        <ul>
+                            <li>Base address</li>
+                            <li>Span (จำนวน pages ที่ entry แทน) <span class="page-ref">หน้า 375-376</span></li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h4>Translation Storage Buffer (TSB):</h4>
+                <ul>
+                    <li>Cache ของ Translation Table Entries (TTEs) สำหรับ recent accessed pages</li>
+                    <li>CPU มี TLB ที่ใช้ TTEs สำหรับ fast hardware lookups <span class="page-ref">หน้า 376</span></li>
+                </ul>
+
+                <h4>ขั้นตอนการแปล Address:</h4>
+                <ol>
+                    <li>Hardware ค้นหา TLB</li>
+                    <li>ถ้าไม่เจอ: hardware ทำ <strong>TLB walk</strong> (walk through in-memory TSB) หา TTE ที่ตรงกับ virtual address</li>
+                    <li>ถ้าเจอใน TSB: CPU copy TSB entry เข้า TLB, translation เสร็จสมบูรณ์</li>
+                    <li>ถ้าไม่เจอใน TSB: kernel ถูก interrupt เพื่อค้นหา hash table</li>
+                    <li>Kernel สร้าง TTE จาก hash table และเก็บใน TSB</li>
+                    <li>MMU complete address translation และดึงข้อมูลจาก main memory <span class="page-ref">หน้า 376</span></li>
+                </ol>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>5. Swapping</h2>
+                <p>Swapping เป็นเทคนิคที่ทำให้ total physical address space ของ processes ทั้งหมดสามารถเกิน real physical memory ของระบบ ช่วยเพิ่ม degree of multiprogramming <span class="page-ref">หน้า 376</span></p>
+
+                <h3>5.1 Standard Swapping</h3>
+                <h4>แนวคิด:</h4>
+                <p>Process หรือส่วนหนึ่งของ process สามารถถูก <strong>swap out</strong> ชั่วคราวจาก memory ไปยัง backing store แล้ว <strong>swap in</strong> กลับเข้า memory เพื่อทำงานต่อ <span class="page-ref">หน้า 376, Figure 9.19</span></p>
+
+                <h4>Backing Store:</h4>
+                <ul>
+                    <li>โดยทั่วไปเป็น fast secondary storage (เช่น SSD)</li>
+                    <li>ต้องใหญ่พอรองรับส่วนของ processes ที่ต้องเก็บและดึงกลับ</li>
+                    <li>ต้อง provide direct access ไปยัง memory images เหล่านี้ <span class="page-ref">หน้า 377</span></li>
+                </ul>
+
+                <h4>ข้อมูลที่ต้อง Swap:</h4>
+                <ul>
+                    <li>Data structures ของ process</li>
+                    <li>สำหรับ multithreaded process: ต้อง swap per-thread data structures ด้วย</li>
+                    <li>OS ต้องเก็บ metadata ของ processes ที่ swap out เพื่อ restore ได้ <span class="page-ref">หน้า 377</span></li>
+                </ul>
+
+                <h4>ข้อดี:</h4>
+                <ul>
+                    <li>อนุญาตให้ physical memory oversubscribed</li>
+                    <li>ระบบรองรับ processes มากกว่าที่ physical memory จะเก็บได้</li>
+                    <li>Idle processes เป็นตัวเลือกดีสำหรับ swapping <span class="page-ref">หน้า 377</span></li>
+                </ul>
+
+                <h4>ข้อเสีย:</h4>
+                <ul>
+                    <li>เวลาที่ใช้ในการย้าย entire processes สูงมาก → ปัจจุบันไม่ค่อยใช้แล้ว</li>
+                    <li>ยกเว้น Solaris ที่ยังใช้ แต่ก็เฉพาะเมื่อ memory ต่ำมาก (dire circumstances) <span class="page-ref">หน้า 377</span></li>
+                </ul>
+
+                <h3>5.2 Swapping with Paging</h3>
+                <h4>แนวคิด:</h4>
+                <p>Swap <strong>pages</strong> ของ process แทนที่จะเป็น entire process ระบบส่วนใหญ่ปัจจุบัน (Linux, Windows) ใช้วิธีนี้ <span class="page-ref">หน้า 377</span></p>
+
+                <h4>คำศัพท์:</h4>
+                <ul>
+                    <li><strong>Swapping:</strong> มักหมายถึง standard swapping (swap entire process)</li>
+                    <li><strong>Paging:</strong> หมายถึง swapping with paging (swap pages)</li>
+                    <li><strong>Page out:</strong> ย้าย page จาก memory ไป backing store</li>
+                    <li><strong>Page in:</strong> ย้าย page จาก backing store กลับ memory <span class="page-ref">หน้า 377, Figure 9.20</span></li>
+                </ul>
+
+                <h4>ข้อดี:</h4>
+                <ul>
+                    <li>ยัง oversubscribe physical memory ได้</li>
+                    <li>ไม่มีค่าใช้จ่ายสูงจากการ swap entire processes</li>
+                    <li>เกี่ยวข้องแค่ pages จำนวนน้อย</li>
+                    <li>ทำงานได้ดีร่วมกับ virtual memory (Chapter 10) <span class="page-ref">หน้า 377</span></li>
+                </ul>
+
+                <h3>5.3 Swapping on Mobile Systems</h3>
+                <h4>ข้อจำกัดบน Mobile Devices:</h4>
+                <ul>
+                    <li>ใช้ flash memory แทน hard disks → พื้นที่จำกัด</li>
+                    <li>Flash memory มีจำนวน writes จำกัดก่อนจะไม่น่าเชื่อถือ</li>
+                    <li>Throughput ระหว่าง main memory และ flash memory ต่ำ <span class="page-ref">หน้า 377-378</span></li>
+                </ul>
+
+                <h4>กลยุทธ์ของ iOS (Apple):</h4>
+                <ul>
+                    <li>ไม่มี swapping</li>
+                    <li>เมื่อ free memory ต่ำกว่า threshold: ขอให้ applications ปล่อย allocated memory โดยสมัครใจ</li>
+                    <li><strong>Read-only data</strong> (เช่น code): ลบออกจาก main memory, reload จาก flash ถ้าจำเป็น</li>
+                    <li><strong>Modified data</strong> (เช่น stack): ไม่มีวันลบ</li>
+                    <li>Applications ที่ไม่ปล่อย memory เพียงพออาจถูก terminate <span class="page-ref">หน้า 378</span></li>
+                </ul>
+
+                <h4>กลยุทธ์ของ Android:</h4>
+                <ul>
+                    <li>คล้ายกับ iOS</li>
+                    <li>อาจ terminate process ถ้า free memory ไม่พอ</li>
+                    <li>ก่อน terminate: <strong>เขียน application state</strong> ไปยัง flash memory เพื่อ restart ได้เร็ว <span class="page-ref">หน้า 378</span></li>
+                </ul>
+
+                <h4>ข้อควรระวังสำหรับนักพัฒนา:</h4>
+                <p>ต้องระมัดระวังในการ allocate และ release memory เพื่อไม่ให้ application ใช้ memory มากเกินไปหรือเกิด memory leaks <span class="page-ref">หน้า 378</span></p>
+            </div>
+
+
+            <div class="summary-box">
+                <h2>🎯 สรุปสำคัญ</h2>
+                
+                <h3>แนวคิดหลักตลอดทั้งเอกสาร</h3>
+                
+                <h4>พัฒนาการทางประวัติศาสตร์:</h4>
+                <ul>
+                    <li>เริ่มจาก contiguous memory allocation (ยุคแรก)</li>
+                    <li>มีปัญหา external fragmentation → พัฒนาเป็น paging</li>
+                    <li>Paging แก้ปัญหา external fragmentation แต่เกิด internal fragmentation เล็กน้อย</li>
+                </ul>
+
+                <h4>Separation และ Protection:</h4>
+                <ul>
+                    <li>ใช้ Base + Limit Registers (ยุคแรก)</li>
+                    <li>พัฒนาเป็น MMU ที่แปลง logical address เป็น physical address</li>
+                    <li>Logical address space แยกจาก physical address space → ความยืดหยุ่นสูง</li>
+                </ul>
+
+                <h4>Address Binding:</h4>
+                <ul>
+                    <li>Compile time → Load time → Execution time (modern systems)</li>
+                    <li>Execution time binding ต้องการฮาร์ดแวร์พิเศษ (MMU)</li>
+                </ul>
+
+                <h4>Paging Architecture:</h4>
+                <ul>
+                    <li>ใช้ page table สำหรับแปล logical page → physical frame</li>
+                    <li>TLB เพื่อเร่งความเร็ว (cache ของ page-table entries)</li>
+                    <li>Page table structures สำหรับ address spaces ขนาดใหญ่:
+                        <ul>
+                            <li>Hierarchical paging (เหมาะกับ 32-bit, ไม่เหมาะ 64-bit)</li>
+                            <li>Hashed page tables (เหมาะกับ > 32 bits, sparse address spaces)</li>
+                            <li>Inverted page tables (ประหยัด memory แต่ search ช้า)</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h4>Swapping:</h4>
+                <ul>
+                    <li>Standard swapping: swap entire process (ไม่นิยมแล้ว)</li>
+                    <li>Swapping with paging: swap pages (ใช้กันอย่างแพร่หลาย)</li>
+                    <li>Mobile systems: ไม่ใช้ swapping เพราะข้อจำกัดของ flash memory</li>
+                </ul>
+
+                <h3>จุดเปลี่ยนสำคัญใน Memory Management</h3>
+                <ol>
+                    <li>Memory Separation <span class="page-ref">หน้า 2</span>: แบ่ง memory ให้แต่ละ process (ยังเป็น 1D, contiguous)</li>
+                    <li>Memory Protection <span class="page-ref">หน้า 3</span>: ป้องกันไม่ให้อ่าน/เขียน memory เกินขอบเขต (base + limit)</li>
+                    <li>Logical vs Physical Address <span class="page-ref">หน้า 4-5</span>: การแยก logical address จาก physical address, MMU ทำหน้าที่แปลง</li>
+                    <li>Address Binding <span class="page-ref">หน้า 6</span>: Compile time, Load time, Execution time binding</li>
+                    <li>Dynamic Loading <span class="page-ref">หน้า 7</span>: โหลด functions เมื่อต้องการใช้</li>
+                    <li>Dynamic Linking <span class="page-ref">หน้า 8</span>: Shared libraries ลด memory footprint</li>
+                    <li>Swapping <span class="page-ref">หน้า 9</span>: ย้าย process ระหว่าง main memory และ backing store</li>
+                    <li>Paging <span class="page-ref">หน้า 13-24</span>: Non-contiguous memory allocation ที่แก้ปัญหา external fragmentation</li>
+                    <li>TLB <span class="page-ref">หน้า 18</span>: Hardware cache เพื่อเร่งความเร็วการแปล address</li>
+                    <li>Hierarchical/Hashed/Inverted Page Tables <span class="page-ref">หน้า 21-24</span>: โครงสร้างต่างๆ เพื่อจัดการ page table ขนาดใหญ่</li>
+                </ol>
+
+                <h3>ความสัมพันธ์ระหว่างแนวคิด</h3>
+                <p>
+                    Contiguous Allocation (ปัญหา: External Fragmentation)<br>
+                    &nbsp; &nbsp; &nbsp; &nbsp; ↓<br>
+                    Paging (แก้ External Fragmentation, เกิด Internal Fragmentation เล็กน้อย)<br>
+                    &nbsp; &nbsp; &nbsp; &nbsp; ↓<br>
+                    Page Table (แปลง Logical → Physical Address)<br>
+                    &nbsp; &nbsp; &nbsp; &nbsp; ↓<br>
+                    ปัญหา: Memory Access ช้า (ต้องเข้าถึง Memory 2 ครั้ง)<br>
+                    &nbsp; &nbsp; &nbsp; &nbsp; ↓<br>
+                    TLB (แก้ปัญหาความเร็ว)<br>
+                    &nbsp; &nbsp; &nbsp; &nbsp; ↓<br>
+                    ปัญหา: Page Table ขนาดใหญ่ใน 64-bit Systems<br>
+                    &nbsp; &nbsp; &nbsp; &nbsp; ↓<br>
+                    Hierarchical / Hashed / Inverted Page Tables<br>
+                    &nbsp; &nbsp; &nbsp; &nbsp; ↓<br>
+                    Swapping with Paging (เพิ่ม Degree of Multiprogramming)
+                </p>
+
+                <h3>ตัวเลขและข้อมูลสำคัญ</h3>
+                <ul>
+                    <li><strong>50-Percent Rule:</strong> First fit จะสูญเสีย 0.5N blocks จาก fragmentation → 1/3 ของ memory อาจใช้ไม่ได้ <span class="page-ref">หน้า 359</span></li>
+                    <li><strong>Page Size ทั่วไป:</strong> 4 KB หรือ 8 KB (บางระบบรองรับ 2 MB) <span class="page-ref">หน้า 363</span></li>
+                    <li><strong>TLB Size:</strong> 32-1,024 entries <span class="page-ref">หน้า 366</span></li>
+                    <li><strong>Hit Ratio ทั่วไป:</strong> 99% (effective access time slowdown เพียง 1%) <span class="page-ref">หน้า 367</span></li>
+                    <li><strong>Intel Core i7 TLBs:</strong> L1 instruction (128), L1 data (64), L2 (512 entries) <span class="page-ref">หน้า 368</span></li>
+                    <li><strong>Shared Library Example:</strong> 40 processes × 2 MB = 80 MB → with sharing = 2 MB เท่านั้น <span class="page-ref">หน้า 370</span></li>
+                </ul>
+
+                <p>หมายเหตุ: บทสรุปนี้รวบรวมเนื้อหาจากทั้ง textbook (Chapter 9, หน้า 349-378) และ slides (หน้า 1-27) โดยเน้นความลึกและความครอบคลุม พร้อมอ้างอิงหน้าที่แม่นยำตามที่ร้องขอ</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

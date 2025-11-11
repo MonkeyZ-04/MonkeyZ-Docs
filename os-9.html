@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สรุป Virtual Memory (Operating System Concepts)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .course-code {
+            font-size: 1.2rem;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .toc {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 40px;
+            border-left: 5px solid #667eea;
+        }
+
+        .toc h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .toc li {
+            padding: 8px 15px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .toc li:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(10px);
+        }
+
+        .chapter {
+            margin-bottom: 50px;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h2 {
+            color: #764ba2;
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            margin: 30px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            position: relative;
+        }
+
+        h3 {
+            color: #667eea;
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            margin: 25px 0 15px;
+            padding-left: 15px;
+            border-left: 4px solid #764ba2;
+        }
+
+        h4 {
+            color: #555;
+            font-size: 1.2rem;
+            margin: 20px 0 10px;
+            font-weight: 600;
+        }
+
+        .page-ref {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 2px 8px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            color: #d73a49;
+        }
+
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 15px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+            font-size: 0.9rem;
+        }
+
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border-radius: 10px;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        tr:hover {
+            background: #e3f2fd;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .example-box {
+            background: #151516;
+            border-left: 4px solid #2196f3;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .example-box h4 {
+            color: #2196f3;
+            margin-top: 0;
+        }
+
+        .summary-box {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 30px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .summary-box h2 {
+            color: white;
+            border-bottom: 2px solid rgba(255,255,255,0.5);
+        }
+        
+        /* Custom styles for summary box content */
+        .summary-box h3 {
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            border-left: 4px solid white;
+            margin-top: 30px;
+        }
+        
+        .summary-box h4 {
+            color: #f8f8f8;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .summary-box ul, .summary-box ol {
+            color: #f8f8f8;
+        }
+
+        .summary-box p {
+            color: white;
+        }
+
+
+        hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+            margin: 30px 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            header {
+                padding: 30px 20px;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            h3 {
+                font-size: 1.2rem;
+            }
+
+            pre {
+                padding: 15px;
+                font-size: 0.85rem;
+            }
+
+            table {
+                font-size: 0.9rem;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+
+            .toc {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .content {
+                padding: 15px;
+            }
+
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .course-code {
+                font-size: 1rem;
+            }
+
+            pre {
+                padding: 10px;
+                font-size: 0.75rem;
+            }
+
+            table {
+                font-size: 0.8rem;
+            }
+
+            .page-ref {
+                display: block;
+                margin: 5px 0;
+            }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #434343 0%, #000000 100%);
+            }
+
+            .container {
+                background: #1e1e1e;
+                color: #e0e0e0;
+            }
+
+            h2, h3, h4 {
+                color: #9c88ff;
+            }
+            
+            h4 {
+                 color: #bbb;
+            }
+
+            .toc {
+                background: #2d2d2d;
+            }
+
+            .toc li {
+                background: #3d3d3d;
+            }
+
+            code {
+                background: #2d2d2d;
+                color: #ff6b6b;
+            }
+
+            table tr:nth-child(even) {
+                background: #2d2d2d;
+            }
+
+            td {
+                border-color: #444;
+            }
+            
+            .summary-box h2, .summary-box h3, .summary-box h4, .summary-box p, .summary-box ul, .summary-box ol {
+                color: #1e1e1e;
+            }
+            .summary-box h2 {
+                border-bottom: 2px solid rgba(0,0,0,0.3);
+            }
+            .summary-box h3 {
+                border-left: 4px solid #1e1e1e;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Virtual Memory (Operating System Concepts)</h1>
+            <div class="course-code">บทสรุปเชิงลึก</div>
+        </header>
+
+        <div class="content">
+            <div class="toc">
+                <h2>📋 สารบัญ</h2>
+                <ul>
+                    <li>🔹 บทนำและแนวคิดพื้นฐาน (Introduction & Background)</li>
+                    <li>🔹 Demand Paging</li>
+                    <li>🔹 Copy-on-Write</li>
+                    <li>🔹 Page Replacement</li>
+                    <li>🔹 Allocation of Frames</li>
+                    <li>🔹 Thrashing</li>
+                    <li>🔹 Memory Compression</li>
+                    <li>🔹 สรุปประเด็นสำคัญ</li>
+                </ul>
+            </div>
+
+            <div class="chapter">
+                <h2>บทนำและแนวคิดพื้นฐาน (Introduction & Background)</h2>
+                
+                <h3>ความจำเสมือน (Virtual Memory) คืออะไร <span class="page-ref">หน้า 389-391</span></h3>
+                <p>Virtual memory เป็นเทคนิคที่แยกหน่วยความจำเชิงตรรกะ (logical memory) ออกจากหน่วยความจำทางกายภาพ (physical memory) <span class="page-ref">หน้า 390</span> ทำให้โปรแกรมเมอร์สามารถเขียนโปรแกรมที่มีขนาดใหญ่กว่าหน่วยความจำทางกายภาพที่มีอยู่จริงได้ Virtual memory ช่วยให้สามารถรันโปรแกรมที่ไม่จำเป็นต้องโหลดทั้งหมดเข้าสู่หน่วยความจำได้ <span class="page-ref">หน้า 389-390</span></p>
+
+                <h3>ประโยชน์หลักของ Virtual Memory <span class="page-ref">หน้า 390-392</span></h3>
+                <ul>
+                    <li><strong>ขจัดข้อจำกัดด้านหน่วยความจำ:</strong> โปรแกรมไม่ถูกจำกัดด้วยขนาดของ physical memory อีกต่อไป <span class="page-ref">หน้า 390</span></li>
+                    <li><strong>เพิ่ม multiprogramming:</strong> สามารถรันโปรแกรมได้มากขึ้นพร้อมกัน โดยแต่ละโปรแกรมใช้ memory น้อยลง <span class="page-ref">หน้า 390</span></li>
+                    <li><strong>ลด I/O:</strong> ไม่ต้อง load หรือ swap ทั้งโปรแกรมเข้า memory ทำให้แต่ละโปรแกรมทำงานเร็วขึ้น <span class="page-ref">หน้า 390</span></li>
+                    <li><strong>Page sharing:</strong> กระบวนการหลายตัวสามารถแชร์ไฟล์และไลบรารีได้ <span class="page-ref">หน้า 392</span></li>
+                </ul>
+
+                <h3>Virtual Address Space <span class="page-ref">หน้า 390-393</span></h3>
+                <p>Virtual address space คือมุมมองเชิงตรรกะของกระบวนการที่เก็บอยู่ใน memory โดยทั่วไปเริ่มจาก address 0 และมีลักษณะเป็น contiguous <span class="page-ref">หน้า 390</span> ในขณะที่ physical memory จัดเป็น page frames และ physical page frames ที่ถูก assign ให้กระบวนการอาจไม่ต่อเนื่องกัน <span class="page-ref">หน้า 390-391</span></p>
+
+                <h4>โครงสร้าง Virtual Address Space <span class="page-ref">หน้า 391, สไลด์ 5</span></h4>
+                <ul>
+                    <li><strong>Text:</strong> โค้ดโปรแกรม</li>
+                    <li><strong>Data:</strong> ตัวแปร global</li>
+                    <li><strong>Heap:</strong> หน่วยความจำที่จัดสรรแบบ dynamic (เติบโตขึ้นด้านบน)</li>
+                    <li><strong>Stack:</strong> ตัวแปร local และ function calls (เติบโตลงด้านล่าง)</li>
+                    <li><strong>ช่องว่างระหว่าง heap และ stack:</strong> sparse address space ที่ยังไม่ได้ใช้งาน</li>
+                </ul>
+
+                <h3>การแชร์หน่วยความจำ (Memory Sharing) <span class="page-ref">หน้า 392-393, สไลด์ 6</span></h3>
+                <ul>
+                    <li><strong>Shared libraries:</strong> ไลบรารีระบบเช่น standard C library สามารถแชร์ระหว่างหลายกระบวนการ โดย map เข้าสู่ virtual address space ของแต่ละกระบวนการ แต่ใช้ physical pages เดียวกัน <span class="page-ref">หน้า 392</span></li>
+                    <li><strong>Shared memory:</strong> กระบวนการสามารถสร้าง region ของ memory เพื่อแชร์กับกระบวนการอื่น <span class="page-ref">หน้า 392</span></li>
+                    <li><strong>Copy-on-write:</strong> การแชร์ pages ระหว่าง parent และ child process หลังจาก <code>fork()</code> <span class="page-ref">หน้า 392</span></li>
+                </ul>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>Demand Paging <span class="page-ref">หน้า 392-399</span></h2>
+
+                <h3>แนวคิดพื้นฐาน (Basic Concepts) <span class="page-ref">หน้า 392-395</span></h3>
+                <p>Demand paging เป็นเทคนิคที่โหลด pages เข้า memory เฉพาะเมื่อมีการเรียกใช้งานเท่านั้น <span class="page-ref">หน้า 393</span> แทนที่จะโหลดโปรแกรมทั้งหมดเข้า memory ตั้งแต่เริ่มต้น Pages ที่ไม่เคยถูกเข้าถึงจะไม่ถูกโหลดเข้า physical memory เลย <span class="page-ref">หน้า 393</span></p>
+
+                <h4>องค์ประกอบของ Demand Paging <span class="page-ref">หน้า 393-394, สไลด์ 5-7</span></h4>
+                <ul>
+                    <li><strong>Valid-invalid bit:</strong> ใช้แยกระหว่าง pages ที่อยู่ใน memory (valid) และ pages ที่ไม่อยู่ใน memory (invalid) <span class="page-ref">หน้า 393-394, สไลด์ 7</span></li>
+                    <li><strong>Page table:</strong> เก็บข้อมูลการ mapping ระหว่าง logical pages กับ physical frames พร้อม valid-invalid bit <span class="page-ref">หน้า 393-394</span></li>
+                    <li><strong>Backing store:</strong> secondary storage (HDD หรือ NVM) ที่เก็บ pages ที่ไม่อยู่ใน memory เรียกว่า swap device หรือ swap space <span class="page-ref">หน้า 395</span></li>
+                </ul>
+
+                <h3>การจัดการ Page Fault <span class="page-ref">หน้า 394-395, สไลด์ 8</span></h3>
+                <p>Page fault เกิดขึ้นเมื่อกระบวนการพยายามเข้าถึง page ที่ไม่อยู่ใน memory <span class="page-ref">หน้า 394</span> ขั้นตอนการจัดการ page fault:</p>
+                <ol>
+                    <li>ตรวจสอบ internal table เพื่อยืนยันว่าการอ้างอิงเป็น valid หรือ invalid <span class="page-ref">หน้า 394</span></li>
+                    <li>หากเป็น invalid ให้ยุติกระบวนการ หากเป็น valid ให้ page in <span class="page-ref">หน้า 394</span></li>
+                    <li>หา free frame จาก free-frame list <span class="page-ref">หน้า 394</span></li>
+                    <li>Schedule การอ่าน secondary storage เพื่อโหลด page ที่ต้องการเข้าสู่ frame ที่จัดสรร <span class="page-ref">หน้า 395</span></li>
+                    <li>เมื่ออ่านเสร็จ ให้อัปเดต internal table และ page table เพื่อระบุว่า page อยู่ใน memory แล้ว <span class="page-ref">หน้า 395</span></li>
+                    <li>Restart instruction ที่ถูกขัดจังหวะโดย trap <span class="page-ref">หน้า 395</span></li>
+                </ol>
+
+                <h3>Pure Demand Paging <span class="page-ref">หน้า 395, สไลด์ 6</span></h3>
+                <p>ในกรณีสุดขั้ว สามารถเริ่มรันกระบวนการโดยไม่มี pages ใดๆ ใน memory เลย <span class="page-ref">หน้า 395</span> เมื่อ OS ตั้ง instruction pointer ไปที่ instruction แรก ซึ่งอยู่บน page ที่ไม่อยู่ใน memory กระบวนการจะเกิด page fault ทันที <span class="page-ref">หน้า 395</span> หลังจาก page นี้ถูกโหลดเข้า memory กระบวนการจะทำงานต่อไป โดยเกิด page fault ตามความจำเป็นจนกว่าทุก pages ที่ต้องการจะอยู่ใน memory <span class="page-ref">หน้า 395</span></p>
+
+                <h3>Locality of Reference <span class="page-ref">หน้า 395, สไลด์ 8</span></h3>
+                <p>โปรแกรมมีแนวโน้มที่จะมี locality of reference ซึ่งหมายความว่าการอ้างอิง memory มักจะอยู่ในบริเวณใกล้เคียงกัน <span class="page-ref">หน้า 395, สไลด์ 8</span> ทำให้ demand paging สามารถให้ performance ที่ดีได้ แม้จะไม่มีทุก pages ใน memory <span class="page-ref">หน้า 395</span></p>
+
+                <h3>Hardware Support <span class="page-ref">หน้า 395</span></h3>
+                <p>Hardware ที่ใช้รองรับ demand paging เหมือนกับที่ใช้สำหรับ paging และ swapping:</p>
+                <ul>
+                    <li><strong>Page table:</strong> สามารถทำเครื่องหมาย entry เป็น invalid ผ่าน valid-invalid bit หรือค่าพิเศษของ protection bits <span class="page-ref">หน้า 395</span></li>
+                    <li><strong>Secondary memory:</strong> เก็บ pages ที่ไม่อยู่ใน main memory <span class="page-ref">หน้า 395</span></li>
+                </ul>
+
+                <h3>Free-Frame List <span class="page-ref">หน้า 396-397, สไลด์ 5</span></h3>
+                <p>OS ส่วนใหญ่มี free-frame list ซึ่งเป็น pool ของ free frames สำหรับตอบสนอง page faults <span class="page-ref">หน้า 396</span> Free frames ต้องถูกจัดสรรเมื่อ stack หรือ heap segments ของกระบวนการขยายตัวด้วย <span class="page-ref">หน้า 396</span> OS จัดสรร free frames โดยใช้เทคนิคที่เรียกว่า <code>zero-fill-on-demand</code> ซึ่ง frames ถูก "zeroed-out" ก่อนที่จะจัดสรร เพื่อลบเนื้อหาเดิม <span class="page-ref">หน้า 397</span></p>
+                <p>เมื่อระบบเริ่มต้น หน่วยความจำที่มีอยู่ทั้งหมดจะถูกวางใน free-frame list <span class="page-ref">หน้า 397</span> เมื่อมีการขอ free frames (เช่น ผ่าน demand paging) ขนาดของ free-frame list จะลดลง <span class="page-ref">หน้า 397</span> เมื่อ list ลดลงถึงจุดหนึ่ง ต้องมีการเติม list กลับคืน <span class="page-ref">หน้า 397</span></p>
+
+                <h3>Performance of Demand Paging <span class="page-ref">หน้า 397-399, สไลด์ 9</span></h3>
+                <h4>Effective Access Time <span class="page-ref">หน้า 397-398</span></h4>
+                <p>สูตรคำนวณ effective access time:</p>
+                <pre><code>effective access time = (1 - p) × ma + p × page fault time</code></pre>
+                <p>โดยที่:</p>
+                <ul>
+                    <li><code>ma</code> = memory access time</li>
+                    <li><code>p</code> = probability of page fault (0 ≤ p ≤ 1)</li>
+                </ul>
+
+                <h4>ตัวอย่างการคำนวณ <span class="page-ref">หน้า 398, สไลด์ 9</span></h4>
+                <p>สมมติ:</p>
+                <ul>
+                    <li>Memory access time = 200 nanoseconds</li>
+                    <li>Average page-fault service time = 8 milliseconds</li>
+                </ul>
+                <p>จาก p = 0.001 (1 ใน 1,000 การเข้าถึงเกิด page fault):</p>
+                <pre><code>effective access time = (1 - 0.001) × 200 + 0.001 × 8,000,000
+                      = 199.8 + 8,000
+                      = 8,199.8 nanoseconds = 8.2 microseconds</code></pre>
+                <p>คอมพิวเตอร์จะช้าลงเป็น 40 เท่า (8,200/200 = 41) เนื่องจาก demand paging <span class="page-ref">หน้า 398, สไลด์ 9</span></p>
+
+                <h4>การรักษา Performance <span class="page-ref">หน้า 398</span></h4>
+                <p>เพื่อให้ performance degradation น้อยกว่า 10% ต้องรักษา probability of page faults ไว้ที่ระดับ:</p>
+                <pre><code>220 > 200 + 7,999,800 × p
+p < 0.0000025 = 1/399,990</code></pre>
+                <p>นั่นคือ ต้องมี page fault น้อยกว่า 1 ครั้งในการเข้าถึง memory 399,990 ครั้ง <span class="page-ref">หน้า 398, สไลด์ 9</span></p>
+
+                <h4>การเพิ่มประสิทธิภาพ <span class="page-ref">หน้า 398-399</span></h4>
+                <ul>
+                    <li>ใส่ RAM ให้เพียงพอ <span class="page-ref">สไลด์ 9</span></li>
+                    <li>ลดเวลา page-fault service</li>
+                    <li>การใช้ swap space อย่างมีประสิทธิภาพ <span class="page-ref">หน้า 398-399</span></li>
+                </ul>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>Copy-on-Write <span class="page-ref">หน้า 399-401, สไลด์ 10</span></h2>
+
+                <h3>แนวคิด <span class="page-ref">หน้า 399-400</span></h3>
+                <p>Copy-on-write เป็นเทคนิคที่ช่วยให้ parent และ child processes แชร์ pages เดียวกันได้ในตอนแรก <span class="page-ref">หน้า 399</span> Pages ที่แชร์จะถูกทำเครื่องหมายเป็น copy-on-write pages ซึ่งหมายความว่า ถ้ากระบวนการใดเขียนลงบน shared page จะมีการสร้างสำเนาของ page นั้น <span class="page-ref">หน้า 399</span></p>
+
+                <h3>การทำงาน <span class="page-ref">หน้า 399-400, สไลด์ 10</span></h3>
+                <ul>
+                    <li><strong>หลัง <code>fork()</code>:</strong> Parent และ child แชร์ pages เดียวกัน <span class="page-ref">หน้า 400</span></li>
+                    <li><strong>เมื่อมีการเขียน:</strong> ถ้า child process พยายามแก้ไข page (เช่น portions ของ stack) OS จะจัดหา frame จาก free-frame list และสร้างสำเนาของ page นั้น จากนั้น map ไปยัง address space ของ child <span class="page-ref">หน้า 400</span></li>
+                    <li><strong>Page ที่ไม่เคยแก้ไข:</strong> Pages ที่ไม่ถูกแก้ไขโดยทั้ง parent และ child สามารถแชร์ต่อไปได้ <span class="page-ref">หน้า 400</span></li>
+                </ul>
+
+                <h3>ข้อดี <span class="page-ref">หน้า 400</span></h3>
+                <ul>
+                    <li>เฉพาะ pages ที่ถูกแก้ไขเท่านั้นที่ถูก copy <span class="page-ref">หน้า 400</span></li>
+                    <li>Pages ที่ไม่สามารถแก้ไขได้ (เช่น pages ที่มี executable code) สามารถแชร์ระหว่าง parent และ child ได้ <span class="page-ref">หน้า 400</span></li>
+                    <li>เป็นเทคนิคทั่วไปที่ใช้ใน Windows, Linux, และ macOS <span class="page-ref">หน้า 400</span></li>
+                </ul>
+
+                <h3><code>vfork()</code> System Call <span class="page-ref">หน้า 400-401</span></h3>
+                <p>UNIX หลายเวอร์ชัน (รวม Linux, macOS, และ BSD UNIX) มี <code>vfork()</code> (virtual memory fork) ซึ่งทำงานต่างจาก <code>fork()</code> ที่ใช้ copy-on-write:</p>
+                <ul>
+                    <li><strong>การทำงาน:</strong> Parent process ถูก suspend และ child process ใช้ address space ของ parent <span class="page-ref">หน้า 400</span></li>
+                    <li><strong>ข้อควรระวัง:</strong> เนื่องจาก <code>vfork()</code> ไม่ใช้ copy-on-write ถ้า child แก้ไข pages ใน address space ของ parent การเปลี่ยนแปลงจะมองเห็นได้โดย parent เมื่อมันกลับมาทำงาน <span class="page-ref">หน้า 400</span></li>
+                    <li><strong>การใช้งาน:</strong> <code>vfork()</code> ควรใช้เมื่อ child process เรียก <code>exec()</code> ทันทีหลังจากถูกสร้าง เนื่องจากไม่มีการ copy pages จึงมีประสิทธิภาพสูงมาก <span class="page-ref">หน้า 401</span></li>
+                </ul>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>Page Replacement <span class="page-ref">หน้า 401-413</span></h2>
+
+                <h3>ความจำเป็นของ Page Replacement <span class="page-ref">หน้า 401-402, สไลด์ 11</span></h3>
+                <p>เมื่อมีการ over-allocating memory (จัดสรร memory มากกว่าที่มี) และไม่มี free frames เหลือ จำเป็นต้องใช้ page replacement <span class="page-ref">หน้า 401</span> หาก page fault เกิดขึ้นและไม่มี free frame OS ต้องเลือก victim frame เพื่อ replace <span class="page-ref">หน้า 401-402</span></p>
+
+                <h3>ขั้นตอนการ Page Replacement <span class="page-ref">หน้า 402, สไลด์ 11-12</span></h3>
+                <ol>
+                    <li>หาตำแหน่งของ page ที่ต้องการใน secondary storage <span class="page-ref">หน้า 402</span></li>
+                    <li>หา free frame:
+                        <ul>
+                            <li>ถ้ามี free frame ให้ใช้เลย <span class="page-ref">หน้า 402</span></li>
+                            <li>ถ้าไม่มี ให้ใช้ page-replacement algorithm เลือก victim frame <span class="page-ref">หน้า 402</span></li>
+                        </ul>
+                    </li>
+                    <li>เขียน victim frame ไปยัง secondary storage (ถ้าจำเป็น) และเปลี่ยน page และ frame tables <span class="page-ref">หน้า 402</span></li>
+                    <li>อ่าน page ที่ต้องการเข้าสู่ frame ที่ว่างใหม่ และเปลี่ยน page และ frame tables <span class="page-ref">หน้า 402</span></li>
+                    <li>ทำงานต่อจากจุดที่เกิด page fault <span class="page-ref">หน้า 402</span></li>
+                </ol>
+
+                <h3>Modify Bit (Dirty Bit) <span class="page-ref">หน้า 402-403, สไลด์ 12</span></h3>
+                <ul>
+                    <li><strong>การทำงาน:</strong> Hardware ตั้ง modify bit เมื่อมีการเขียนข้อมูลลงใน page <span class="page-ref">หน้า 402</span></li>
+                    <li><strong>ประโยชน์:</strong> เมื่อเลือก page สำหรับ replacement ถ้า modify bit ไม่ถูกตั้ง (page ไม่ถูกแก้ไข) ไม่จำเป็นต้องเขียนกลับไปยัง storage ทำให้ลดเวลาในการจัดการ page fault ลงครึ่งหนึ่ง <span class="page-ref">หน้า 402-403</span></li>
+                </ul>
+
+                <h3>Frame-Allocation และ Page-Replacement Algorithms <span class="page-ref">หน้า 403-404, สไลด์ 13</span></h3>
+                <p>เพื่อ implement demand paging ต้องพัฒนา:</p>
+                <ul>
+                    <li><strong>Frame-allocation algorithm:</strong> ตัดสินใจว่าจะจัดสรรกี่ frames ให้แต่ละกระบวนการ <span class="page-ref">หน้า 403</span></li>
+                    <li><strong>Page-replacement algorithm:</strong> เมื่อต้องการ replacement ต้องเลือกว่า frames ไหนจะถูก replace <span class="page-ref">หน้า 403</span></li>
+                </ul>
+                <p>การประเมิน algorithm ทำโดยรันบน reference string (ลำดับของการอ้างอิง memory) และนับจำนวน page faults <span class="page-ref">หน้า 404</span> จำนวน page faults ลดลงเมื่อจำนวน frames ที่มีเพิ่มขึ้น <span class="page-ref">หน้า 404</span></p>
+
+                <h3>FIFO Page Replacement <span class="page-ref">หน้า 404-406, สไลด์ 16-17</span></h3>
+                <h4>การทำงาน <span class="page-ref">หน้า 404-405</span></h4>
+                <p>FIFO เป็น algorithm ที่ง่ายที่สุด โดยเชื่อมโยงแต่ละ page กับเวลาที่ page นั้นถูกนำเข้า memory <span class="page-ref">หน้า 404</span> เมื่อต้อง replace page จะเลือก page ที่เก่าที่สุด <span class="page-ref">หน้า 404-405</span> สามารถ implement ด้วย FIFO queue <span class="page-ref">หน้า 405</span></p>
+
+                <h4>Belady's Anomaly <span class="page-ref">หน้า 406, สไลด์ 17</span></h4>
+                <p>สำหรับ page-replacement algorithms บางตัว page-fault rate อาจเพิ่มขึ้นเมื่อจำนวน allocated frames เพิ่มขึ้น <span class="page-ref">หน้า 406</span> Belady's anomaly เป็นผลลัพธ์ที่ไม่คาดคิดนี้ <span class="page-ref">หน้า 406</span> ตัวอย่างจาก reference string ที่แสดงใน Figure 10.13 แสดงให้เห็นว่า 4 frames ให้ page faults มากกว่า 3 frames <span class="page-ref">หน้า 406</span></p>
+
+                <h3>Optimal Page Replacement <span class="page-ref">หน้า 406-407, สไลด์ 18</span></h3>
+                <p>Optimal algorithm (OPT หรือ MIN) มี page-fault rate ต่ำที่สุดและไม่ประสบกับ Belady's anomaly <span class="page-ref">หน้า 406</span></p>
+                <h4>หลักการ <span class="page-ref">หน้า 406</span></h4>
+                <p>Replace the page that will not be used for the longest period of time <span class="page-ref">หน้า 406</span></p>
+                <h4>ข้อจำกัด <span class="page-ref">หน้า 407</span></h4>
+                <p>Optimal algorithm ยากต่อการ implement เพราะต้องการความรู้เกี่ยวกับ reference string ในอนาคต <span class="page-ref">หน้า 407</span> จึงมักใช้สำหรับการศึกษาเปรียบเทียบมากกว่าการใช้งานจริง <span class="page-ref">หน้า 407</span></p>
+
+                <h3>LRU Page Replacement <span class="page-ref">หน้า 407-409, สไลด์ 19-20</span></h3>
+                <h4>แนวคิด <span class="page-ref">หน้า 407</span></h4>
+                <p>Least Recently Used (LRU) ใช้ recent past เป็นการประมาณ near future <span class="page-ref">หน้า 407</span> Replace page ที่ไม่ถูกใช้งานนานที่สุด <span class="page-ref">หน้า 407</span> สามารถคิดว่าเป็น optimal algorithm ที่มองย้อนกลับไปในเวลา <span class="page-ref">หน้า 407, สไลด์ 19</span></p>
+
+                <h4>วิธีการ Implementation <span class="page-ref">หน้า 408-409, สไลด์ 19</span></h4>
+                <p><strong>1. Counters</strong> <span class="page-ref">หน้า 408</span>:</p>
+                <ul>
+                    <li>เชื่อมโยง page-table entry แต่ละตัวกับ time-of-use field <span class="page-ref">หน้า 408</span></li>
+                    <li>เพิ่ม logical clock หรือ counter ให้กับ CPU <span class="page-ref">หน้า 408</span></li>
+                    <li>Clock เพิ่มขึ้นทุกการอ้างอิง memory <span class="page-ref">หน้า 408</span></li>
+                    <li>เมื่อมีการอ้างอิง page copy เนื้อหาของ clock register ไปยัง time-of-use field <span class="page-ref">หน้า 408</span></li>
+                    <li>Replace page ที่มีค่า time น้อยที่สุด <span class="page-ref">หน้า 408</span></li>
+                    <li>ต้องค้นหา page table และเขียนลง memory ทุกการเข้าถึง memory <span class="page-ref">หน้า 408</span></li>
+                </ul>
+                <p><strong>2. Stack</strong> <span class="page-ref">หน้า 408, สไลด์ 20</span>:</p>
+                <ul>
+                    <li>เก็บ stack ของ page numbers <span class="page-ref">หน้า 408</span></li>
+                    <li>เมื่อมีการอ้างอิง page ให้เอา page นั้นออกจาก stack และวางไว้ด้านบน <span class="page-ref">หน้า 408</span></li>
+                    <li>Most recently used page อยู่ด้านบนเสมอ least recently used page อยู่ด้านล่างเสมอ <span class="page-ref">หน้า 408</span></li>
+                    <li>ควร implement ด้วย doubly linked list พร้อม head และ tail pointers <span class="page-ref">หน้า 408</span></li>
+                    <li>การลบ page และวางไว้ด้านบนต้องเปลี่ยน pointers สูงสุด 6 ตัว <span class="page-ref">หน้า 408</span></li>
+                    <li>Tail pointer ชี้ไปที่ด้านล่างของ stack ซึ่งเป็น LRU page <span class="page-ref">หน้า 408</span></li>
+                </ul>
+
+                <h4>Stack Algorithms <span class="page-ref">หน้า 408-409</span></h4>
+                <p>LRU และ Optimal เป็น stack algorithms ซึ่งไม่ประสบกับ Belady's anomaly <span class="page-ref">หน้า 408</span> Stack algorithm คือ algorithm ที่ set ของ pages ใน memory สำหรับ n frames เป็น subset ของ set ของ pages ที่อยู่ใน memory สำหรับ n+1 frames เสมอ <span class="page-ref">หน้า 408-409</span></p>
+
+                <h3>LRU-Approximation Page Replacement <span class="page-ref">หน้า 409-411</span></h3>
+                <h4>Reference Bit <span class="page-ref">หน้า 409</span></h4>
+                <p>ระบบหลายตัวให้ hardware support ในรูปของ reference bit <span class="page-ref">หน้า 409</span> Reference bit สำหรับ page ถูกตั้งโดย hardware เมื่อมีการอ้างอิง page นั้น (อ่านหรือเขียน) <span class="page-ref">หน้า 409</span> Reference bits เชื่อมโยงกับแต่ละ entry ใน page table <span class="page-ref">หน้า 409</span></p>
+
+                <h4>Additional-Reference-Bits Algorithm <span class="page-ref">หน้า 409-410, สไลด์ 21</span></h4>
+                <ul>
+                    <li>เก็บ 8-bit byte สำหรับแต่ละ page ใน memory <span class="page-ref">หน้า 409, สไลด์ 21</span></li>
+                    <li>ทุก 100 milliseconds timer interrupt จะ shift reference bit เข้าสู่ high-order bit ของ 8-bit byte โดย shift bits อื่นไปทางขวา 1 bit <span class="page-ref">หน้า 409-410, สไลด์ 21</span></li>
+                    <li>8-bit shift registers เก็บประวัติการใช้ page ใน 8 time periods ที่ผ่านมา <span class="page-ref">หน้า 410</span></li>
+                    <li>ตีความ 8-bit bytes เป็น unsigned integers page ที่มีค่าต่ำที่สุดคือ LRU page <span class="page-ref">หน้า 410, สไลด์ 21</span></li>
+                </ul>
+
+                <h4>Second-Chance Algorithm (Clock Algorithm) <span class="page-ref">หน้า 410, สไลด์ 22</span></h4>
+                <ul>
+                    <li>เป็น FIFO replacement algorithm พื้นฐาน แต่ตรวจสอบ reference bit <span class="page-ref">หน้า 410</span></li>
+                    <li>ถ้า reference bit = 0 replace page นั้น <span class="page-ref">หน้า 410</span></li>
+                    <li>ถ้า reference bit = 1 ให้โอกาสที่สอง (second chance) clear reference bit และไปเลือก FIFO page ถัดไป <span class="page-ref">หน้า 410</span></li>
+                    <li>เมื่อ page ได้ second chance reference bit ถูก clear และ arrival time ถูก reset เป็น current time <span class="page-ref">หน้า 410</span></li>
+                    <li>Page ที่ถูกใช้บ่อยพอที่จะเก็บ reference bit set ไว้จะไม่ถูก replace <span class="page-ref">หน้า 410</span></li>
+                    <li>Implementation: ใช้ circular queue pointer (hand on clock) ชี้ไปยัง page ที่จะ replace ต่อไป <span class="page-ref">หน้า 410, สไลด์ 22</span> เมื่อต้องการ frame pointer จะเคลื่อนไปจนกว่าจะพบ page ที่มี reference bit = 0 <span class="page-ref">หน้า 410</span> ขณะเคลื่อนที่จะ clear reference bits <span class="page-ref">หน้า 410, สไลด์ 22</span></li>
+                </ul>
+
+                <h4>Enhanced Second-Chance Algorithm <span class="page-ref">หน้า 410-411, สไลด์ 23</span></h4>
+                <p>พิจารณาทั้ง reference bit และ modify bit เป็น ordered pair <span class="page-ref">หน้า 410</span> สี่ classes ที่เป็นไปได้:</p>
+                <ul>
+                    <li><strong>(0, 0):</strong> ไม่ถูกใช้เมื่อเร็วๆ นี้และไม่ถูกแก้ไข — best page to replace <span class="page-ref">หน้า 410</span></li>
+                    <li><strong>(0, 1):</strong> ไม่ถูกใช้เมื่อเร็วๆ นี้แต่ถูกแก้ไข — ไม่ดีนัก เพราะต้องเขียนออกก่อน replacement <span class="page-ref">หน้า 410</span></li>
+                    <li><strong>(1, 0):</strong> ถูกใช้เมื่อเร็วๆ นี้แต่ clean — อาจจะถูกใช้อีกเร็วๆ นี้ <span class="page-ref">หน้า 410</span></li>
+                    <li><strong>(1, 1):</strong> ถูกใช้เมื่อเร็วๆ นี้และถูกแก้ไข — อาจจะถูกใช้อีกเร็วๆ นี้และต้องเขียนออก <span class="page-ref">หน้า 411</span></li>
+                </ul>
+                <p>ใช้ scheme เดียวกับ clock algorithm แต่ตรวจสอบ class แทน reference bit <span class="page-ref">หน้า 411</span> Replace page แรกที่พบใน lowest nonempty class <span class="page-ref">หน้า 411</span> ความแตกต่างหลักคือให้ preference กับ pages ที่ถูกแก้ไขเพื่อลดจำนวน I/Os <span class="page-ref">หน้า 411</span></p>
+
+                <h3>Counting-Based Page Replacement <span class="page-ref">หน้า 411-412, สไลด์ 15</span></h3>
+                <h4>Least Frequently Used (LFU) <span class="page-ref">หน้า 411, สไลด์ 15</span></h4>
+                <ul>
+                    <li>Replace page ที่มี count น้อยที่สุด <span class="page-ref">หน้า 411</span></li>
+                    <li>เหตุผล: page ที่ใช้งานบ่อยควรมี reference count สูง <span class="page-ref">หน้า 411</span></li>
+                    <li>ปัญหา: page ที่ถูกใช้หนักในช่วงเริ่มต้นแต่ไม่ใช้อีกจะมี count สูงและคงอยู่ใน memory <span class="page-ref">หน้า 411-412</span></li>
+                    <li>วิธีแก้: shift counts ไปทางขวา 1 bit เป็นระยะเพื่อสร้าง exponentially decaying average usage count <span class="page-ref">หน้า 412</span></li>
+                </ul>
+
+                <h4>Most Frequently Used (MFU) <span class="page-ref">หน้า 412, สไลด์ 15</span></h4>
+                <ul>
+                    <li>เหตุผล: page ที่มี count น้อยที่สุดอาจเพิ่งถูกนำเข้ามาและยังไม่ถูกใช้ <span class="page-ref">หน้า 412</span></li>
+                    <li>หมายเหตุ: ทั้ง LFU และ MFU ไม่ค่อยถูกใช้ เพราะ implementation แพงและไม่ approximate OPT replacement ได้ดี <span class="page-ref">หน้า 412</span></li>
+                </ul>
+
+                <h3>Page-Buffering Algorithms <span class="page-ref">หน้า 412, สไลด์ 15</span></h3>
+                <h4>Pool of Free Frames <span class="page-ref">หน้า 412</span></h4>
+                <ul>
+                    <li>เก็บ pool ของ free frames <span class="page-ref">หน้า 412</span></li>
+                    <li>เมื่อเกิด page fault ใช้ free frame จาก pool ก่อนที่ victim จะถูกเขียนออก <span class="page-ref">หน้า 412</span></li>
+                    <li>ทำให้กระบวนการสามารถ restart ได้เร็วที่สุด โดยไม่ต้องรอให้ victim ถูกเขียนออก <span class="page-ref">หน้า 412</span></li>
+                </ul>
+
+                <h4>List of Modified Pages <span class="page-ref">หน้า 412</span></h4>
+                <ul>
+                    <li>เก็บ list ของ modified pages <span class="page-ref">หน้า 412</span></li>
+                    <li>เมื่อ paging device ว่าง เลือก modified page และเขียนไปยัง secondary storage <span class="page-ref">หน้า 412</span></li>
+                    <li>จากนั้น reset modify bit <span class="page-ref">หน้า 412</span></li>
+                    <li>เพิ่มโอกาสที่ page จะ clean เมื่อถูกเลือกสำหรับ replacement <span class="page-ref">หน้า 412</span></li>
+                </ul>
+
+                <h4>Pool of Free Frames with Page Memory <span class="page-ref">หน้า 412</span></h4>
+                <ul>
+                    <li>เก็บ pool ของ free frames แต่จำ page ที่อยู่ในแต่ละ frame <span class="page-ref">หน้า 412</span></li>
+                    <li>เนื่องจาก frame contents ไม่ถูกแก้ไขเมื่อ frame ถูกเขียนไปยัง secondary storage old page สามารถนำมาใช้ใหม่ได้โดยตรงจาก free-frame pool ถ้าต้องการก่อนที่ frame จะถูกนำมาใช้ใหม่ <span class="page-ref">หน้า 412</span></li>
+                    <li>ไม่ต้องทำ I/O ในกรณีนี้ <span class="page-ref">หน้า 412</span></li>
+                </ul>
+
+                <h3>Applications and Page Replacement <span class="page-ref">หน้า 412-413</span></h3>
+                <p>ในบางกรณี applications ที่เข้าถึงข้อมูลผ่าน virtual memory ของ OS มี performance แย่กว่าถ้า OS ไม่มี buffering เลย <span class="page-ref">หน้า 412</span> ตัวอย่างเช่น database ที่มี memory management และ I/O buffering เป็นของตัวเอง <span class="page-ref">หน้า 412</span> Applications เช่นนี้เข้าใจการใช้ memory และ storage ของตัวเองดีกว่า OS ที่ implement algorithms สำหรับ general-purpose use <span class="page-ref">หน้า 412</span></p>
+                <p>เนื่องจากปัญหาเหล่านี้ OS บางตัวให้โปรแกรมพิเศษสามารถใช้ secondary storage partition เป็น large sequential array ของ logical blocks โดยไม่มี file-system data structures <span class="page-ref">หน้า 413</span> เรียกว่า <strong>raw disk</strong> และ I/O ไปยัง array นี้เรียกว่า <strong>raw I/O</strong> <span class="page-ref">หน้า 413</span> Raw I/O ข้ามผ่าน file-system services ทั้งหมด <span class="page-ref">หน้า 413</span></p>
+                <p>แม้ว่า applications บางตัวจะมีประสิทธิภาพมากขึ้นเมื่อ implement storage services พิเศษของตัวเองบน raw partition แต่ applications ส่วนใหญ่มี performance ดีกว่าเมื่อใช้ file-system services ปกติ <span class="page-ref">หน้า 413</span></p>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>Allocation of Frames <span class="page-ref">หน้า 413-419</span></h2>
+
+                <h3>Minimum Number of Frames <span class="page-ref">หน้า 413-414, สไลด์ 24</span></h3>
+                <h4>เหตุผลสำหรับ Minimum Frames <span class="page-ref">หน้า 413</span></h4>
+                <ul>
+                    <li><strong>Performance:</strong> เมื่อจำนวน frames ที่จัดสรรลดลง page-fault rate เพิ่มขึ้น ทำให้การทำงานของกระบวนการช้าลง <span class="page-ref">หน้า 413</span></li>
+                    <li><strong>Instruction Restart:</strong> เมื่อเกิด page fault ก่อนที่ instruction จะสำเร็จ instruction ต้องถูก restart <span class="page-ref">หน้า 413</span> ดังนั้นต้องมี frames เพียงพอเพื่อเก็บทุก pages ที่ instruction เดียวอาจอ้างอิง <span class="page-ref">หน้า 413-414</span></li>
+                </ul>
+
+                <h4>ตัวอย่าง <span class="page-ref">หน้า 414</span></h4>
+                <ul>
+                    <li>เครื่องที่ memory-reference instructions อ้างอิงได้เพียง 1 memory address ต้องการอย่างน้อย 1 frame สำหรับ instruction และ 1 frame สำหรับ memory reference <span class="page-ref">หน้า 414</span></li>
+                    <li>ถ้าอนุญาต one-level indirect addressing (เช่น load instruction บน frame 16 อ้างอิงไปยัง address บน frame 0 ซึ่งเป็น indirect reference ไปยัง frame 23) ต้องการอย่างน้อย 3 frames ต่อกระบวนการ <span class="page-ref">หน้า 414</span></li>
+                </ul>
+                <p>Minimum number of frames ถูกกำหนดโดย computer architecture <span class="page-ref">หน้า 414</span> Maximum number ถูกกำหนดโดยจำนวน physical memory ที่มีอยู่ <span class="page-ref">หน้า 414</span></p>
+
+                <h3>Allocation Algorithms <span class="page-ref">หน้า 414-415, สไลด์ 24</span></h3>
+                <h4>Equal Allocation <span class="page-ref">หน้า 414</span></h4>
+                <p>แบ่ง m frames ระหว่าง n processes โดยให้ทุกคนได้ส่วนเท่ากัน m/n frames <span class="page-ref">หน้า 414</span> ตัวอย่าง: ถ้ามี 93 frames และ 5 processes แต่ละ process จะได้ 18 frames frames ที่เหลือ 3 frames สามารถใช้เป็น free-frame buffer pool <span class="page-ref">หน้า 414</span></p>
+
+                <h4>Proportional Allocation <span class="page-ref">หน้า 414-415</span></h4>
+                <p>จัดสรร memory ให้แต่ละกระบวนการตามขนาดของมัน <span class="page-ref">หน้า 414</span> ให้ขนาดของ virtual memory สำหรับ process pi เป็น si และกำหนด S = Σsi <span class="page-ref">หน้า 414</span></p>
+                <p>ถ้าจำนวน frames ทั้งหมดที่มีคือ m จัดสรร ai frames ให้ process pi โดยที่:</p>
+                <pre><code>ai = si/S × m</code></pre>
+                <p><span class="page-ref">หน้า 414</span></p>
+                <p>ต้องปรับแต่งแต่ละ ai ให้เป็น integer ที่มากกว่า minimum number of frames ที่ instruction set ต้องการ และผลรวมไม่เกิน m <span class="page-ref">หน้า 414-415</span></p>
+                <p>ตัวอย่าง: ระบบที่มี frame size 1 KB มี 2 processes หนึ่งขนาด 10 KB และอีกหนึ่งขนาด 127 KB ถ้ามี 62 free frames:</p>
+                <pre><code>10/137 × 62 ≈ 4 frames
+127/137 × 62 ≈ 57 frames</code></pre>
+                <p><span class="page-ref">หน้า 415</span></p>
+
+                <h4>Priority-Based Allocation <span class="page-ref">หน้า 415</span></h4>
+                <p>ใช้ proportional allocation scheme โดยที่อัตราส่วนของ frames ขึ้นอยู่กับ priorities ของ processes มากกว่า relative sizes <span class="page-ref">หน้า 415</span> หรือใช้ combination ของ size และ priority <span class="page-ref">หน้า 415</span></p>
+
+                <h3>Global versus Local Allocation <span class="page-ref">หน้า 415-419, สไลด์ 25</span></h3>
+                <h4>Local Replacement <span class="page-ref">หน้า 415</span></h4>
+                <ul>
+                    <li>แต่ละกระบวนการเลือก replacement จาก set ของ allocated frames ของตัวเองเท่านั้น <span class="page-ref">หน้า 415</span></li>
+                    <li>จำนวน frames ที่จัดสรรให้กระบวนการไม่เปลี่ยนแปลง <span class="page-ref">หน้า 415</span></li>
+                    <li>Set ของ pages ใน memory สำหรับกระบวนการถูกกระทบโดย paging behavior ของกระบวนการนั้นเท่านั้น <span class="page-ref">หน้า 415</span></li>
+                </ul>
+
+                <h4>Global Replacement <span class="page-ref">หน้า 415</span></h4>
+                <ul>
+                    <li>กระบวนการเลือก replacement frame จาก set ของ frames ทั้งหมดได้ แม้ว่า frame นั้นจะถูกจัดสรรให้กระบวนการอื่นอยู่ก็ตาม <span class="page-ref">หน้า 415</span></li>
+                    <li>จำนวน frames ที่จัดสรรให้กระบวนการสามารถเปลี่ยนแปลงได้ <span class="page-ref">หน้า 415</span></li>
+                    <li>Set ของ pages ใน memory สำหรับกระบวนการขึ้นอยู่กับ paging behavior ของกระบวนการนั้นและกระบวนการอื่นด้วย <span class="page-ref">หน้า 415</span></li>
+                    <li>โดยทั่วไปให้ system throughput ที่ดีกว่า จึงถูกใช้กันทั่วไป <span class="page-ref">หน้า 415</span></li>
+                </ul>
+
+                <h4>Reclaiming Pages Strategy <span class="page-ref">หน้า 416-418, สไลด์ 28</span></h4>
+                <p>กลยุทธ์ที่ใช้ implement global page-replacement policy โดยตอบสนอง memory requests ทั้งหมดจาก free-frame list แต่ trigger page replacement เมื่อ list ลดลงต่ำกว่า certain threshold <span class="page-ref">หน้า 416</span></p>
+                <p><strong>การทำงาน</strong> (Figure 10.18, <span class="page-ref">สไลด์ 28</span>):</p>
+                <ul>
+                    <li><strong>Minimum threshold:</strong> เมื่อ free memory ลดลงต่ำกว่า kernel routine (reaper) เริ่ม reclaim pages จากทุกกระบวนการ <span class="page-ref">หน้า 416-417</span></li>
+                    <li><strong>Maximum threshold:</strong> เมื่อ free memory ถึง reaper routine ถูก suspend <span class="page-ref">หน้า 417</span></li>
+                    <li>Reaper routine อาจใช้ page-replacement algorithm ใดก็ได้ แต่โดยทั่วไปใช้ LRU approximation <span class="page-ref">หน้า 417</span></li>
+                    <li><strong>Aggressive Reclaiming:</strong> ถ้า reaper routine ไม่สามารถรักษา list ของ free frames ไว้ต่ำกว่า minimum threshold ได้ อาจเริ่ม reclaim pages อย่างรุนแรงขึ้น <span class="page-ref">หน้า 417-418</span></li>
+                </ul>
+
+                <h4>Out-of-Memory (OOM) Killer <span class="page-ref">หน้า 418, สไลด์ 28</span></h4>
+                <p>ใน Linux เมื่อ free memory ลดลงต่ำมาก OOM killer จะเลือกกระบวนการหนึ่งเพื่อ terminate ทำให้ memory ของมันถูกปล่อย <span class="page-ref">หน้า 418</span></p>
+                <ul>
+                    <li><strong>OOM Score:</strong> แต่ละกระบวนการมี OOM score โดยที่ score สูงขึ้นเพิ่มโอกาสที่กระบวนการจะถูก terminate <span class="page-ref">หน้า 418</span> OOM scores คำนวณตามเปอร์เซ็นต์ของ memory ที่กระบวนการใช้ — เปอร์เซ็นต์สูงขึ้น OOM score สูงขึ้น <span class="page-ref">หน้า 418</span> OOM scores สามารถดูได้ใน /proc file system <span class="page-ref">หน้า 418</span></li>
+                </ul>
+
+                <h3>Non-Uniform Memory Access (NUMA) <span class="page-ref">หน้า 418-419, สไลด์ 24</span></h3>
+                <p>บนระบบ NUMA ที่มีหลาย CPUs CPU หนึ่งสามารถเข้าถึง sections บางส่วนของ main memory ได้เร็วกว่าส่วนอื่น <span class="page-ref">หน้า 418</span> ระบบ NUMA ประกอบด้วยหลาย CPUs แต่ละตัวมี local memory ของตัวเอง (Figure 10.19) <span class="page-ref">หน้า 418</span> CPUs ถูกจัดระเบียบโดยใช้ shared system interconnect <span class="page-ref">หน้า 418</span> CPU สามารถเข้าถึง local memory ของตัวเองได้เร็วกว่า memory local ของ CPU อื่น <span class="page-ref">หน้า 418</span></p>
+
+                <h4>การจัดการ Memory บน NUMA <span class="page-ref">หน้า 419</span></h4>
+                <ul>
+                    <li><strong>เป้าหมาย:</strong> จัดสรร memory frames "ใกล้ที่สุด" (minimum latency) กับ CPU ที่กระบวนการกำลังทำงาน <span class="page-ref">หน้า 419</span></li>
+                    <li><strong>Scheduler:</strong> ต้อง track CPU สุดท้ายที่แต่ละกระบวนการทำงาน <span class="page-ref">หน้า 419</span></li>
+                    <li><strong>Virtual Memory System:</strong> พยายามจัดสรร frames ให้กระบวนการใกล้กับ CPU ที่มันกำลังถูก schedule <span class="page-ref">หน้า 419</span></li>
+                    <li><strong>ตัวอย่างการ implement:</strong>
+                        <ul>
+                            <li><strong>Linux:</strong> Kernel ระบุ hierarchy ของ scheduling domains <span class="page-ref">หน้า 419</span> CFS scheduler ไม่อนุญาตให้ threads migrate ข้าม different domains <span class="page-ref">หน้า 419</span> Linux มี separate free-frame list สำหรับแต่ละ NUMA node <span class="page-ref">หน้า 419</span></li>
+                            <li><strong>Solaris:</strong> สร้าง lgroups (locality groups) ใน kernel <span class="page-ref">หน้า 419</span> แต่ละ lgroup รวม CPUs และ memory โดยที่แต่ละ CPU ใน group สามารถเข้าถึง memory ใน group ภายใน defined latency interval <span class="page-ref">หน้า 419</span></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>Thrashing <span class="page-ref">หน้า 419-424</span></h2>
+
+                <h3>นิยาม <span class="page-ref">หน้า 419, สไลด์ 29</span></h3>
+                <p>Thrashing เกิดขึ้นเมื่อกระบวนการไม่มี frames "เพียงพอ" — ไม่มี minimum number of frames ที่ต้องการเพื่อรองรับ pages ใน working set <span class="page-ref">หน้า 419</span> กระบวนการจะ page-fault อย่างรวดเร็ว และต้อง replace page ที่จะถูกใช้อีกทันที <span class="page-ref">หน้า 419</span> <strong>Thrashing คือ high paging activity</strong> กระบวนการใช้เวลากับ paging มากกว่า executing <span class="page-ref">หน้า 419</span></p>
+
+                <h3>Cause of Thrashing <span class="page-ref">หน้า 419-421, สไลด์ 29</span></h3>
+                <h4>สถานการณ์ที่นำไปสู่ Thrashing <span class="page-ref">หน้า 419-420</span></h4>
+                <ol>
+                    <li>OS monitors CPU utilization <span class="page-ref">หน้า 419</span></li>
+                    <li>ถ้า CPU utilization ต่ำเกินไป OS เพิ่ม degree of multiprogramming โดยเพิ่มกระบวนการใหม่ <span class="page-ref">หน้า 420</span></li>
+                    <li>Global page-replacement algorithm ถูกใช้ replace pages โดยไม่คำนึงว่าเป็นของกระบวนการไหน <span class="page-ref">หน้า 420</span></li>
+                    <li>กระบวนการเข้าสู่ phase ใหม่และต้องการ frames มากขึ้น เริ่ม fault และเอา frames จากกระบวนการอื่น <span class="page-ref">หน้า 420</span></li>
+                    <li>กระบวนการเหล่านั้นต้องการ pages นั้นและก็ fault เอา frames จากกระบวนการอื่น <span class="page-ref">หน้า 420</span></li>
+                    <li>Processes ที่ fault ต้องใช้ paging device เพื่อ swap pages in และ out <span class="page-ref">หน้า 420</span></li>
+                    <li>เมื่อพวกมัน queue up สำหรับ paging device ready queue ว่างลง <span class="page-ref">หน้า 420</span></li>
+                    <li>CPU utilization ลดลง <span class="page-ref">หน้า 420</span></li>
+                    <li>CPU scheduler เห็น CPU utilization ลดลงและเพิ่ม degree of multiprogramming อีก <span class="page-ref">หน้า 420</span></li>
+                    <li>Thrashing เกิดขึ้น system throughput ตกลง <span class="page-ref">หน้า 420</span></li>
+                </ol>
+                <p>Figure 10.20 แสดงความสัมพันธ์ระหว่าง CPU utilization และ degree of multiprogramming <span class="page-ref">หน้า 420, สไลด์ 29</span></p>
+
+                <h4>การจำกัด Thrashing ด้วย Local Replacement <span class="page-ref">หน้า 420</span></h4>
+                <p>Local replacement algorithm (หรือ priority replacement algorithm) สามารถจำกัดผลกระทบของ thrashing <span class="page-ref">หน้า 420</span> Local replacement ต้องการให้แต่ละกระบวนการเลือกจาก set ของ allocated frames ของตัวเองเท่านั้น <span class="page-ref">หน้า 420</span> ดังนั้นถ้ากระบวนการหนึ่งเริ่ม thrash มันไม่สามารถขโมย frames จากกระบวนการอื่นและทำให้กระบวนการนั้น thrash ด้วย <span class="page-ref">หน้า 420-421</span></p>
+                <p>แต่ปัญหาไม่ได้รับการแก้ไขอย่างสมบูรณ์ ถ้ากระบวนการกำลัง thrash พวกมันจะอยู่ใน queue สำหรับ paging device เป็นส่วนใหญ่ของเวลา <span class="page-ref">หน้า 421</span> Average service time สำหรับ page fault จะเพิ่มขึ้นเนื่องจาก average queue ที่ยาวขึ้นสำหรับ paging device <span class="page-ref">หน้า 421</span> Effective access time จะเพิ่มขึ้นแม้สำหรับกระบวนการที่ไม่ thrash <span class="page-ref">หน้า 421</span></p>
+
+                <h3>Locality Model <span class="page-ref">หน้า 420-421, สไลด์ 32</span></h3>
+                <p>Locality model ระบุว่าเมื่อกระบวนการทำงาน มันเคลื่อนจาก locality หนึ่งไปยังอีก locality หนึ่ง <span class="page-ref">หน้า 421</span> <strong>Locality คือ set ของ pages ที่ถูกใช้งานร่วมกัน</strong> <span class="page-ref">หน้า 421</span> โปรแกรมที่กำลังรันโดยทั่วไปประกอบด้วยหลาย localities ที่แตกต่างกันซึ่งอาจ overlap กัน <span class="page-ref">หน้า 421</span></p>
+                <p>ตัวอย่าง: เมื่อ function ถูกเรียก มันกำหนด locality ใหม่ <span class="page-ref">หน้า 421</span> ใน locality นี้ memory references ถูกทำไปยัง instructions ของ function call local variables และ subset ของ global variables <span class="page-ref">หน้า 421-422</span> เมื่อเรา exit function กระบวนการออกจาก locality นี้ <span class="page-ref">หน้า 422</span></p>
+                <p>Figure 10.21 แสดง concept ของ locality และวิธีที่ locality ของกระบวนการเปลี่ยนแปลงตามเวลา <span class="page-ref">หน้า 422</span></p>
+
+                <h3>Working-Set Model <span class="page-ref">หน้า 422-424, สไลด์ 30</span></h3>
+                <h4>แนวคิด <span class="page-ref">หน้า 422</span></h4>
+                <p>Working-set model อิงจากสมมติฐานของ locality <span class="page-ref">หน้า 422</span> Model นี้ใช้พารามิเตอร์ Δ เพื่อกำหนด <strong>working-set window</strong> <span class="page-ref">หน้า 422</span> ไอเดียคือตรวจสอบ Δ page references ล่าสุด <span class="page-ref">หน้า 422</span> Set ของ pages ใน Δ page references ล่าสุดคือ <strong>working set</strong> (Figure 10.22) <span class="page-ref">หน้า 422</span></p>
+                <p>ถ้า page อยู่ใน active use มันจะอยู่ใน working set <span class="page-ref">หน้า 422</span> ถ้าไม่ถูกใช้อีกต่อไป มันจะ drop จาก working set ภายใน Δ time units หลังจาก last reference <span class="page-ref">หน้า 422</span> Working set เป็นการประมาณ locality ของโปรแกรม <span class="page-ref">หน้า 422</span></p>
+
+                <h4>Accuracy <span class="page-ref">หน้า 422</span></h4>
+                <p>ความแม่นยำของ working set ขึ้นอยู่กับการเลือก Δ:</p>
+                <ul>
+                    <li>ถ้า Δ เล็กเกินไป จะไม่ครอบคลุม locality ทั้งหมด <span class="page-ref">หน้า 422</span></li>
+                    <li>ถ้า Δ ใหญ่เกินไป อาจ overlap หลาย localities <span class="page-ref">หน้า 422</span></li>
+                    <li>ในกรณีสุดขั้ว ถ้า Δ เป็น infinite working set คือ set ของ pages ที่ถูก touched ระหว่าง process execution <span class="page-ref">หน้า 422</span></li>
+                </ul>
+
+                <h4>Working-Set Size (WSS) <span class="page-ref">หน้า 422-423, สไลด์ 30</span></h4>
+                <p>Property ที่สำคัญที่สุดของ working set คือ size ของมัน <span class="page-ref">หน้า 422</span> ถ้าคำนวณ working-set size WSSi สำหรับแต่ละกระบวนการในระบบ สามารถพิจารณาว่า:</p>
+                <pre><code>D = ΣWSSi</code></pre>
+                <p>โดยที่ D คือ total demand for frames <span class="page-ref">หน้า 423, สไลด์ 30</span> แต่ละกระบวนการกำลังใช้ pages ใน working set ของมันอย่างแข็งขัน <span class="page-ref">หน้า 423</span> ดังนั้น process i ต้องการ WSSi frames <span class="page-ref">หน้า 423</span></p>
+                <p>ถ้า total demand มากกว่า total number of available frames (D > m) thrashing จะเกิดขึ้น เพราะบางกระบวนการจะไม่มี frames เพียงพอ <span class="page-ref">หน้า 423, สไลด์ 30</span></p>
+
+                <h4>กลยุทธ์การใช้งาน <span class="page-ref">หน้า 423</span></h4>
+                <ul>
+                    <li>OS monitors working set ของแต่ละกระบวนการและจัดสรร frames เพียงพอให้ working set size <span class="page-ref">หน้า 423</span></li>
+                    <li>ถ้ามี extra frames เพียงพอ สามารถเริ่มกระบวนการใหม่ได้ <span class="page-ref">หน้า 423</span></li>
+                    <li>ถ้าผลรวมของ working-set sizes เพิ่มขึ้นเกิน total number of available frames OS เลือกกระบวนการเพื่อ suspend <span class="page-ref">หน้า 423</span></li>
+                    <li>Pages ของกระบวนการถูกเขียนออก (swapped) และ frames ของมันถูกจัดสรรใหม่ให้กระบวนการอื่น <span class="page-ref">หน้า 423</span></li>
+                    <li>Suspended process สามารถ restart ภายหลัง <span class="page-ref">หน้า 423</span></li>
+                </ul>
+                <p>Working-set strategy ป้องกัน thrashing ในขณะเดียวกันเก็บ degree of multiprogramming ให้สูงที่สุด ทำให้เพิ่ม CPU utilization <span class="page-ref">หน้า 423</span></p>
+
+                <h4>ความยากในการ Implement <span class="page-ref">หน้า 423-424</span></h4>
+                <p>ความยากของ working-set model คือการ keep track of working set <span class="page-ref">หน้า 423</span> Working-set window เป็น moving window <span class="page-ref">หน้า 424</span> ที่แต่ละ memory reference reference ใหม่ปรากฏที่ปลายหนึ่งและ oldest reference หลุดออกที่อีกปลายหนึ่ง <span class="page-ref">หน้า 424</span></p>
+                <p><strong>วิธีประมาณ:</strong> ใช้ fixed-interval timer interrupt และ reference bit <span class="page-ref">หน้า 424</span></p>
+                <p><strong>ตัวอย่าง:</strong> สมมติ Δ = 10,000 references และเกิด timer interrupt ทุก 5,000 references <span class="page-ref">หน้า 424</span></p>
+                <ul>
+                    <li>เมื่อได้รับ timer interrupt copy และ clear reference-bit values สำหรับแต่ละ page <span class="page-ref">หน้า 424</span></li>
+                    <li>ถ้าเกิด page fault สามารถตรวจสอบ current reference bit และ two in-memory bits เพื่อกำหนดว่า page ถูกใช้ภายใน 10,000 ถึง 15,000 references ล่าสุดหรือไม่ <span class="page-ref">หน้า 424</span></li>
+                    <li>ถ้าถูกใช้ อย่างน้อยหนึ่ง bits จะเป็น on <span class="page-ref">หน้า 424</span></li>
+                    <li>Pages ที่มีอย่างน้อยหนึ่ง bit on จะถูกพิจารณาว่าอยู่ใน working set <span class="page-ref">หน้า 424</span></li>
+                </ul>
+                <p><strong>Trade-off:</strong> สามารถลดความไม่แน่นอนโดยเพิ่มจำนวน history bits และ frequency ของ interrupts แต่ cost ในการ service interrupts ที่บ่อยขึ้นจะสูงขึ้นตามไปด้วย <span class="page-ref">หน้า 424</span></p>
+
+                <h3>Page-Fault Frequency (PFF) <span class="page-ref">หน้า 424-425, สไลด์ 31</span></h3>
+                <p>กลยุทธ์ที่ใช้ page-fault frequency ใช้แนวทางที่ direct กว่า <span class="page-ref">หน้า 424</span> ปัญหาเฉพาะคือวิธีป้องกัน thrashing <span class="page-ref">หน้า 424</span> Thrashing มี high page-fault rate <span class="page-ref">หน้า 424</span> ดังนั้นต้องการควบคุม page-fault rate <span class="page-ref">หน้า 424</span></p>
+
+                <h4>การทำงาน <span class="page-ref">หน้า 424-425, สไลด์ 31</span></h4>
+                <ul>
+                    <li>กำหนด upper และ lower bounds บน desired page-fault rate (Figure 10.23) <span class="page-ref">หน้า 424-425</span></li>
+                    <li>ถ้า actual page-fault rate เกิน upper limit จัดสรร frame อีกให้กระบวนการ <span class="page-ref">หน้า 424-425</span></li>
+                    <li>ถ้า page-fault rate ต่ำกว่า lower limit เอา frame ออกจากกระบวนการ <span class="page-ref">หน้า 425</span></li>
+                </ul>
+                <p>สามารถวัดและควบคุม page-fault rate โดยตรงเพื่อป้องกัน thrashing <span class="page-ref">หน้า 425</span></p>
+                <p>เช่นเดียวกับ working-set strategy อาจต้อง swap out กระบวนการ <span class="page-ref">หน้า 425</span> ถ้า page-fault rate เพิ่มขึ้นและไม่มี free frames ต้องเลือกกระบวนการและ swap out ไปยัง backing store <span class="page-ref">หน้า 425</span> Freed frames จะถูกแจกจ่ายให้กระบวนการที่มี high page-fault rates <span class="page-ref">หน้า 425</span></p>
+
+                <h3>Current Practice <span class="page-ref">หน้า 425</span></h3>
+                <p>ในทางปฏิบัติ thrashing และ swapping ที่เกิดขึ้นมีผลกระทบสูงต่อ performance <span class="page-ref">หน้า 425</span> Best practice ในปัจจุบันในการ implement ระบบคอมพิวเตอร์คือรวม physical memory เพียงพอเมื่อเป็นไปได้ เพื่อหลีกเลี่ยง thrashing และ swapping <span class="page-ref">หน้า 425</span> การให้ memory เพียงพอเพื่อเก็บทุก working sets ใน memory พร้อมกัน ยกเว้นภายใต้สภาวะสุดขั้ว จะให้ user experience ที่ดีที่สุด <span class="page-ref">หน้า 425</span></p>
+            </div>
+
+            <hr>
+
+            <div class="chapter">
+                <h2>Memory Compression <span class="page-ref">หน้า 425-426, สไลด์ 24-25</span></h2>
+
+                <h3>แนวคิด <span class="page-ref">หน้า 425</span></h3>
+                <p>Memory compression เป็นทางเลือกของ paging <span class="page-ref">หน้า 425</span> แทนที่จะ page out modified frames ไปยัง swap space เรา compress หลาย frames เข้าเป็น single frame ทำให้ระบบสามารถลดการใช้ memory โดยไม่ต้อง resort ไปหา swapping pages <span class="page-ref">หน้า 425</span></p>
+
+                <h3>การทำงาน <span class="page-ref">หน้า 425-426</span></h3>
+                <p>Figure 10.24 แสดง free-frame list มี 6 frames <span class="page-ref">หน้า 425</span> สมมติว่าจำนวน free frames นี้ลดลงต่ำกว่า threshold ที่ trigger page replacement <span class="page-ref">หน้า 425</span></p>
+                <p>ขั้นตอน:</p>
+                <ol>
+                    <li>Replacement algorithm (เช่น LRU approximation) เลือก 4 frames — 15, 3, 35, และ 26 — เพื่อวางบน free-frame list <span class="page-ref">หน้า 425</span></li>
+                    <li>วาง frames เหล่านี้บน modified-frame list ก่อน <span class="page-ref">หน้า 425</span></li>
+                    <li>แทนที่จะเขียน modified-frame list ไปยัง swap space ให้ compress จำนวน frames (เช่น 3 frames) และเก็บ compressed versions ใน single page frame <span class="page-ref">หน้า 425</span></li>
+                </ol>
+                <p>ใน Figure 10.25:</p>
+                <ul>
+                    <li>Frame 7 ถูกเอาออกจาก free-frame list <span class="page-ref">หน้า 425</span></li>
+                    <li>Frames 15, 3, และ 35 ถูก compress และเก็บใน frame 7 <span class="page-ref">หน้า 425</span></li>
+                    <li>Frame 7 จากนั้นถูกเก็บใน list of compressed frames <span class="page-ref">หน้า 425</span></li>
+                    <li>Frames 15, 3, และ 35 สามารถถูกย้ายไปยัง free-frame list ได้ <span class="page-ref">หน้า 425</span></li>
+                </ul>
+                <p>ถ้าหนึ่งใน three compressed frames ถูก reference ภายหลัง page fault เกิดขึ้น และ compressed frame ถูก decompress เพื่อ restore three pages 15, 3, และ 35 ใน memory <span class="page-ref">หน้า 425-426</span></p>
+            </div>
+
+
+            <div class="summary-box">
+                <h2>🎯 สรุปประเด็นสำคัญ</h2>
+
+                <h3>แนวคิดหลักของ Virtual Memory</h3>
+                <ul>
+                    <li>Virtual memory แยก logical memory จาก physical memory ทำให้โปรแกรมมีขนาดได้ใหญ่กว่า physical memory <span class="page-ref">หน้า 390</span></li>
+                    <li>Demand paging โหลด pages เฉพาะเมื่อต้องการใช้งาน ไม่โหลดทั้งโปรแกรม <span class="page-ref">หน้า 393, สไลด์ 6</span></li>
+                    <li>Virtual address space เริ่มจาก address 0 มี text, data, heap, stack พร้อม sparse address space <span class="page-ref">หน้า 391, สไลด์ 5</span></li>
+                </ul>
+
+                <h3>การจัดการ Page Fault</h3>
+                <ul>
+                    <li>Page fault เกิดเมื่อเข้าถึง page ที่ไม่อยู่ใน memory <span class="page-ref">หน้า 394</span></li>
+                    <li>ใช้ valid-invalid bit แยก pages ที่อยู่/ไม่อยู่ใน memory <span class="page-ref">หน้า 393-394, สไลด์ 7</span></li>
+                    <li>OS โหลด page จาก backing store, อัปเดต page table, และ restart instruction <span class="page-ref">หน้า 394-395, สไลด์ 8</span></li>
+                    <li>Locality of reference ทำให้ demand paging มีประสิทธิภาพ <span class="page-ref">หน้า 395, สไลด์ 8</span></li>
+                </ul>
+
+                <h3>Performance และ Optimization</h3>
+                <ul>
+                    <li>Effective access time = (1-p)×ma + p×page fault time <span class="page-ref">หน้า 397-398, สไลด์ 9</span></li>
+                    <li>ต้องรักษา page-fault rate ต่ำมาก (< 1/399,990) เพื่อ performance degradation < 10% <span class="page-ref">หน้า 398</span></li>
+                    <li>Copy-on-write ช่วยให้ parent-child แชร์ pages จนกว่าจะมีการเขียน <span class="page-ref">หน้า 399-400, สไลด์ 10</span></li>
+                    <li>Free-frame list ใช้ <code>zero-fill-on-demand</code> <span class="page-ref">หน้า 396-397</span></li>
+                </ul>
+
+                <h3>Page Replacement Algorithms</h3>
+                <ul>
+                    <li><strong>FIFO:</strong> ง่ายแต่มี Belady's anomaly <span class="page-ref">หน้า 404-406, สไลด์ 16-17</span></li>
+                    <li><strong>Optimal:</strong> ต่ำที่สุดแต่ต้องการความรู้อนาคต ใช้เปรียบเทียบเท่านั้น <span class="page-ref">หน้า 406-407, สไลด์ 18</span></li>
+                    <li><strong>LRU:</strong> ประมาณ optimal ดี implement ด้วย counters หรือ stack <span class="page-ref">หน้า 407-409, สไลด์ 19-20</span></li>
+                    <li><strong>LRU Approximation:</strong> Additional-reference-bits (8-bit), Second-chance (clock), Enhanced second-chance <span class="page-ref">หน้า 409-411, สไลด์ 21-23</span></li>
+                    <li><strong>Counting-based:</strong> LFU และ MFU ไม่ค่อยใช้ <span class="page-ref">หน้า 411-412, สไลด์ 15</span></li>
+                    <li><strong>Page-buffering:</strong> Pool of free frames, modified pages list <span class="page-ref">หน้า 412, สไลด์ 15</span></li>
+                </ul>
+
+                <h3>Frame Allocation</h3>
+                <ul>
+                    <li><strong>Minimum frames:</strong> กำหนดโดย architecture ขึ้นอยู่กับ instruction set <span class="page-ref">หน้า 413-414, สไลด์ 24</span></li>
+                    <li><strong>Equal allocation:</strong> แบ่ง frames เท่าๆ กัน <span class="page-ref">หน้า 414</span></li>
+                    <li><strong>Proportional allocation:</strong> แบ่งตามขนาด process <span class="page-ref">หน้า 414-415</span></li>
+                    <li><strong>Global replacement:</strong> เลือก victim จาก all frames ให้ throughput ดีกว่า <span class="page-ref">หน้า 415-419, สไลด์ 25-28</span></li>
+                    <li><strong>Local replacement:</strong> เลือกจาก own frames ป้องกัน thrashing แพร่กระจาย <span class="page-ref">หน้า 415, 420-421</span></li>
+                </ul>
+
+                <h3>Thrashing</h3>
+                <ul>
+                    <li>เกิดเมื่อใช้เวลา paging มากกว่า executing <span class="page-ref">หน้า 419, สไลด์ 29</span></li>
+                    <li><strong>สาเหตุ:</strong> degree of multiprogramming สูงเกิน + global replacement <span class="page-ref">หน้า 419-420</span></li>
+                    <li><strong>Locality model:</strong> process เคลื่อนจาก locality หนึ่งไปอีก locality หนึ่ง <span class="page-ref">หน้า 420-422, สไลด์ 32</span></li>
+                    <li><strong>Working-set model:</strong> จัดสรร frames เพียงพอสำหรับ working set (D = ΣWSSi) <span class="page-ref">หน้า 422-424, สไลด์ 30</span></li>
+                    <li><strong>Page-fault frequency:</strong> ควบคุม page-fault rate ด้วย upper/lower bounds <span class="page-ref">หน้า 424-425, สไลด์ 31</span></li>
+                    <li><strong>Best practice:</strong> ใส่ physical memory เพียงพอเพื่อหลีกเลี่ยง thrashing <span class="page-ref">หน้า 425</span></li>
+                </ul>
+
+                <h3>เทคนิคเพิ่มเติม</h3>
+                <ul>
+                    <li><strong>Memory compression:</strong> compress หลาย frames เป็น single frame แทน swapping <span class="page-ref">หน้า 425-426</span></li>
+                    <li><strong>NUMA:</strong> จัดสรร memory frames ใกล้กับ CPU ที่ process ทำงาน <span class="page-ref">หน้า 418-419, สไลด์ 24</span></li>
+                    <li><strong><code>OOM killer</code> (Linux):</strong> terminate process ตาม OOM score เมื่อ memory ต่ำมาก <span class="page-ref">หน้า 418, สไลด์ 28</span></li>
+                    <li><strong>Major vs Minor page faults:</strong> Major ต้องอ่านจาก backing store, Minor แค่อัปเดต page table <span class="page-ref">หน้า 416</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
