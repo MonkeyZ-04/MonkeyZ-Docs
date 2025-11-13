@@ -51,11 +51,11 @@
 
                 <h4>is_empty function</h4>
                 <pre><code>#let is_empty = function[]->true|_->false;;
-is_empty : 'a list -> bool = <fun></code></pre>
+is_empty : 'a list -> bool = &lt;fun&gt; </code></pre>
 
                 <h4>get_head function</h4>
                 <pre><code>#let get_head=function[]->raise(Failure "get_head")|h::t->h;;
-get_head : 'a list -> 'a = <fun></code></pre>
+get_head : 'a list -> 'a = &lt;fun&gt;</code></pre>
                 
                 <ul>
                     <li><strong>raise:</strong> ฟังก์ชันสำหรับ raise exception <span class="page-ref">หน้า 34</span></li>
@@ -64,19 +64,18 @@ get_head : 'a list -> 'a = <fun></code></pre>
 
                 <h4>length function <span class="page-ref">หน้า 34</span></h4>
                 <pre><code>#let rec length=function[]->0|h::t->(length t)+1;;
-length : 'a list -> int = <fun></code></pre>
+length : 'a list -> int = &lt;fun&gt;</code></pre>
 
                 <h4>concat function <span class="page-ref">หน้า 34</span></h4>
                 <pre><code>#let rec concat=function([],l2)->l2|h::t,l2)->h::concat(t,l2);;
-concat: 'a list * 'a list -> 'a list = <fun></code></pre>
-
+concat: 'a list * 'a list -> 'a list = &lt;fun&gt;</code></pre>
                 <h3>Higher-Order List Functions <span class="page-ref">หน้า 34-35</span></h3>
 
                 <h4>map function</h4>
                 <div class="example-box">
                     <p><strong>การทำงาน:</strong> map f l จะ apply f กับทุก element ใน l</p>
                     <pre><code>#let rec map=function f->(function[]->[]|h::t->(f h)::(map f t));;
-map : ('a -> 'b) -> 'a list -> 'b list = <fun></code></pre>
+map : ('a -> 'b) -> 'a list -> 'b list = &lt;fun&gt;</code></pre>
                 </div>
 
                 <h4>filter function</h4>
@@ -84,7 +83,7 @@ map : ('a -> 'b) -> 'a list -> 'b list = <fun></code></pre>
                     <p><strong>การทำงาน:</strong> filter p l คืน list ของ element ทั้งหมดใน l ที่ p เป็น true</p>
                     <pre><code>#let rec filter=function p->(function[]->[]|h::T-> 
     if(p h) then h::(filter p t) else (filter p t);;
-filter : ('a->bool)->'a list-> 'a list= <fun></code></pre>
+filter : ('a->bool)->'a list-> 'a list= &lt;fun&gt;</code></pre>
                 </div>
 
                 <h4>ตัวอย่างการใช้งาน <span class="page-ref">หน้า 35</span></h4>
